@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歷史名將評鑑 (v12.9 動態錨點對位版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Noto+Sans+TC:wght@300;400;500;700&family=Ma+Shan+Zheng&display=swap');
+        
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f2f0e9; transition: padding-bottom 0.3s; overscroll-behavior: none; }
+        h1, h2, h3, h4, .calligraphy { font-family: 'Ma Shan Zheng', cursive; }
+        .serif { font-family: 'Noto Serif TC', serif; }
+        .poem-font { font-family: 'Ma Shan Zheng', cursive; font-style: normal; letter-spacing: 0.05em; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d6d3c9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+        /* Rank Badges - Explicit Styles */
+        .rank-badge { font-family: 'Noto Serif TC', serif; font-weight: 900; padding: 0.15rem 0.6rem; border-radius: 4px; font-size: 0.9rem; display: inline-block; min-width: 48px; text-align: center; border: 2px solid rgba(255,255,255,0.3); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        
+        .rank-S-plus { background: linear-gradient(135deg, #4a0404 0%, #7f1d1d 100%) !important; color: #ffd700 !important; border-color: #d4af37 !important; text-shadow: 0 1px 2px rgba(0,0,0,0.5); box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+        .rank-S { background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%) !important; color: #fff !important; }
+        .rank-S-minus { background: linear-gradient(135deg, #991b1b 0%, #ef4444 100%) !important; color: #fff !important; }
+        .rank-A-plus { background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%) !important; color: #fff !important; }
+        .rank-A { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important; color: #fff !important; }
+        .rank-A-minus { background: linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%) !important; color: #fff !important; }
+        .rank-B-plus { background: linear-gradient(135deg, #065f46 0%, #10b981 100%) !important; color: #fff !important; }
+        .rank-B { background: linear-gradient(135deg, #374151 0%, #6b7280 100%) !important; color: #fff !important; } 
+        .rank-C-plus { background: linear-gradient(135deg, #92400e 0%, #d97706 100%) !important; color: #fff !important; } 
+        .rank-C { background: linear-gradient(135deg, #52525b 0%, #71717a 100%) !important; color: #fff !important; } 
+        .rank-C-minus { background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%) !important; color: #fff !important; } 
+
+        .paper-card { background-color: #fffdf9; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), inset 0 0 40px rgba(227, 222, 206, 0.2); border: 1px solid #e5e0d3; transition: all 0.3s; position: relative; }
+        .paper-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.1); border-color: #d4af37; }
+        
+        /* S+ Special Effect */
+        .card-s-plus::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 0.75rem; box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.15); pointer-events: none; z-index: 0; }
+
+        .card.selected-red { border: 2px solid #ef4444; background-color: #fef2f2; transform: scale(1.02); }
+        .card.selected-blue { border: 2px solid #3b82f6; background-color: #eff6ff; transform: scale(1.02); }
+        .card.selected-host { border: 2px solid #475569; background-color: #f1f5f9; transform: scale(1.02); }
+        .card.selected-soul { border: 2px solid #9333ea; background-color: #f3e8ff; transform: scale(1.02); }
+
+        .filter-btn { border: 1px solid #e5e0d3; background: #fff; color: #57534e; transition: all 0.2s; font-family: 'Noto Serif TC', serif; }
+        .filter-btn:hover { transform: scale(1.05); border-color: #a8a29e; }
+        .filter-btn.active { background-color: #2c2826; color: #f5f5f4; border-color: #2c2826; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
+
+        .modal-overlay { background-color: rgba(26, 24, 22, 0.85); backdrop-filter: blur(4px); }
+        .typing-dot { animation: typing 1.4s infinite ease-in-out both; background-color: #d4af37; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        .bottom-panel { box-shadow: 0 -4px 20px rgba(0,0,0,0.15); border-top: 3px solid #d4af37; transition: transform 0.3s ease-in-out, height 0.3s ease-in-out; }
+        .role-slot { border: 1px dashed #a8a29e; background: rgba(255,255,255,0.6); transition: all 0.2s; }
+        .role-slot:hover { border-color: #78716c; background: #fff; }
+        .role-slot.filled { border-style: solid; background-color: #fff; border-color: #d6d3c9; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .role-slot.active-selection { border-color: #d4af37; background-color: #fffbeb; animation: pulse-gold 2s infinite; }
+        @keyframes pulse-gold { 0% { box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.4); } 50% { box-shadow: inset 0 0 0 3px rgba(212, 175, 55, 0.6); } 100% { box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.4); } }
+
+        .prose h3 { font-family: 'Noto Serif TC', serif; color: #451a03; border-left: 4px solid #b45309; padding-left: 1rem; margin-top: 1.5rem; }
+        .prose p { color: #44403c; line-height: 1.8; margin-bottom: 1rem; text-align: justify; }
+        .prose strong { color: #78350f; font-weight: 700; }
+        .chart-container { position: relative; height: 300px; width: 100%; margin-bottom: 1.5rem; background: #fff; border-radius: 12px; padding: 10px; border: 1px solid #e2e8f0; }
+
+        .affinity-badge { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap; }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .chat-bubble { max-width: 85%; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; line-height: 1.6; font-size: 0.95rem; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-user { background-color: #e5e7eb; color: #1f2937; align-self: flex-end; border-bottom-right-radius: 4px; font-family: 'Noto Sans TC'; }
+        .chat-ai { background-color: #fffdf9; color: #44403c; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #e5e0d3; font-family: 'Noto Serif TC'; }
+        .chat-ai strong { font-weight: bold; color: #78350f; }
+        
+        .new-badge { position: absolute; top: -6px; right: -6px; background-color: #be123c; color: white; font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; font-family: 'Noto Sans TC'; }
+        .mod-badge { position: absolute; top: -6px; right: -6px; background-color: #1d4ed8; color: white; font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; font-family: 'Noto Sans TC'; }
+        
+        .btn-gold { background: linear-gradient(to bottom, #d4af37, #b8860b); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.2); box-shadow: 0 2px 5px rgba(184, 134, 11, 0.3); transition: all 0.2s; }
+        .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(184, 134, 11, 0.4); }
+        .btn-gold:disabled { background: #d6d3c9; color: #a8a29e; box-shadow: none; cursor: not-allowed; transform: none; }
+        .btn-ink { background-color: #2c2826; color: #f5f5f4; transition: all 0.3s ease; }
+        .btn-ink:hover { background-color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transform: translateY(-1px); }
+    </style>
+</head>
+<body class="min-h-screen selection:bg-orange-100 selection:text-orange-900">
+
+    <!-- Navbar -->
+    <header class="bg-[#1c1917] text-[#f5f5f4] shadow-xl sticky top-0 z-50 border-b border-[#44403c]">
+        <div class="max-w-[1400px] mx-auto px-4 py-3 flex justify-between items-center flex-wrap gap-4">
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="resetApp()">
+                <div class="w-10 h-10 bg-gradient-to-br from-[#d4af37] to-[#8b6914] rounded flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
+                    <i class="fa-solid fa-dragon text-xl text-[#2c0b0e]"></i>
+                </div>
+                <div class="flex flex-col">
+                    <h1 class="text-2xl tracking-widest calligraphy text-[#e5e5e5]">歷史名將評鑑</h1>
+                    <span class="text-[10px] text-[#a8a29e] tracking-[0.2em] font-serif uppercase">v12.9 動態錨點對位版</span>
+                </div>
+            </div>
+            <div class="flex gap-3 items-center">
+                <!-- Save/Load -->
+                <div class="flex bg-[#2c2826] rounded-lg p-1 gap-1 border border-[#44403c]">
+                    <button onclick="saveDataFile()" class="text-[#d6d3c9] hover:text-white hover:bg-[#44403c] px-3 py-1.5 rounded transition-all text-sm font-serif flex items-center gap-2" title="保存目前進度">
+                        <i class="fa-solid fa-floppy-disk text-[#f97316]"></i> <span class="hidden md:inline">存檔</span>
+                    </button>
+                    <button onclick="document.getElementById('fileInput').click()" class="text-[#d6d3c9] hover:text-white hover:bg-[#44403c] px-3 py-1.5 rounded transition-all text-sm font-serif flex items-center gap-2" title="讀取歷史存檔">
+                        <i class="fa-solid fa-folder-open text-[#14b8a6]"></i> <span class="hidden md:inline">讀檔</span>
+                    </button>
+                    <input type="file" id="fileInput" accept=".json" class="hidden" onchange="loadDataFile(this)">
+                </div>
+
+                <div class="h-6 w-px bg-[#44403c] mx-1 hidden lg:block"></div>
+
+                <div class="flex bg-[#2c2826] rounded-lg p-1 gap-1 border border-[#44403c]">
+                    <button onclick="openAddModal()" class="text-[#d6d3c9] hover:text-white hover:bg-[#44403c] px-3 py-1.5 rounded transition-all text-sm font-serif flex items-center gap-2" title="招募新名將">
+                        <i class="fa-solid fa-scroll text-[#d4af37]"></i> <span class="hidden md:inline">招募</span>
+                    </button>
+                    <button onclick="openEditHub()" class="text-[#d6d3c9] hover:text-white hover:bg-[#44403c] px-3 py-1.5 rounded transition-all text-sm font-serif flex items-center gap-2" title="修訂史料">
+                        <i class="fa-solid fa-brush text-[#60a5fa]"></i> <span class="hidden md:inline">修訂</span>
+                    </button>
+                </div>
+
+                <div class="h-6 w-px bg-[#44403c] mx-1 hidden lg:block"></div>
+
+                <!-- 模式切換 -->
+                <div class="flex gap-2">
+                    <button onclick="toggleMode('warRoom')" id="warRoomToggleBtn" class="bg-[#2c2826] hover:bg-[#0f172a] text-white border border-[#44403c] px-4 py-2 rounded-lg text-sm font-serif tracking-wide transition-all shadow-lg flex items-center gap-2 hover:border-indigo-500">
+                        <i class="fa-solid fa-chess-board text-indigo-400"></i> <span>戰情室</span>
+                    </button>
+                    <button onclick="toggleMode('soulMode')" id="soulModeToggleBtn" class="bg-[#2c2826] hover:bg-[#2e1065] text-white border border-[#44403c] px-4 py-2 rounded-lg text-sm font-serif tracking-wide transition-all shadow-lg flex items-center gap-2 hover:border-purple-500">
+                        <i class="fa-solid fa-yin-yang text-purple-400"></i> <span>魂穿</span>
+                    </button>
+                    <button onclick="toggleMode('scenarioMode')" id="scenarioModeToggleBtn" class="bg-[#2c2826] hover:bg-[#450a0a] text-white border border-[#44403c] px-4 py-2 rounded-lg text-sm font-serif tracking-wide transition-all shadow-lg flex items-center gap-2 hover:border-red-500">
+                        <i class="fa-solid fa-fire-flame-curved text-red-500"></i> <span>絕境</span>
+                    </button>
+                </div>
+
+                <div class="h-6 w-px bg-[#44403c] mx-1 hidden lg:block"></div>
+
+                <button onclick="exportToCSV()" class="text-[#a8a29e] hover:text-white px-2 transition-colors" title="匯出 Excel">
+                    <i class="fa-solid fa-file-csv text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-[1400px] mx-auto px-4 py-8">
+        <!-- 控制面板 -->
+        <div class="bg-[#fffdf9] rounded-xl shadow-sm border border-[#e5e0d3] p-5 mb-8 relative overflow-hidden">
+            <!-- 裝飾紋理 -->
+            <div class="absolute top-0 right-0 opacity-5 pointer-events-none">
+                <i class="fa-solid fa-dragon text-9xl text-black transform rotate-12 translate-x-10 -translate-y-10"></i>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6 items-center justify-between relative z-10">
+                <!-- 搜尋 -->
+                <div class="relative w-full md:w-96 group">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#a8a29e] group-focus-within:text-[#2c2826] transition-colors font-serif italic">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="searchInput" placeholder="尋訪名將..." class="scroll-input w-full pl-10 pr-4 py-3 rounded-lg text-[#2c2826] placeholder-[#d6d3c9] font-serif">
+                </div>
+
+                <!-- 狀態顯示 -->
+                <div class="flex items-center gap-4">
+                    <div id="selectionModeTip" class="hidden flex items-center gap-2 text-[#b45309] bg-[#fffbeb] border border-[#fcd34d] px-4 py-2 rounded-lg text-sm font-bold animate-pulse shadow-sm">
+                        <i class="fa-solid fa-hand-pointer"></i><span id="tipText">點擊下方名將入陣</span>
+                    </div>
+                    <div id="statsContainer" class="flex items-center gap-2 text-[#78716c] font-serif">
+                        <span class="text-xs uppercase tracking-widest border-r border-[#d6d3c9] pr-3">Total Legends</span>
+                        <span id="countDisplay" class="text-2xl font-bold text-[#2c2826] calligraphy">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分級篩選 (仿碑文風格) -->
+            <div class="mt-6 flex flex-wrap gap-2 items-center justify-center md:justify-start select-none border-t border-[#f0ebe0] pt-4">
+                <button class="filter-btn active px-4 py-1.5 rounded shadow-sm text-sm" data-rank="all">全覽</button>
+                <div class="h-6 w-px bg-[#e5e0d3] mx-2"></div>
+                
+                <div class="flex gap-2">
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#854d0e]" data-rank="S+">S+ 滅國</button>
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#991b1b]" data-rank="S">S 支柱</button>
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#b91c1c]" data-rank="S-">S- 梟雄</button>
+                </div>
+                <div class="h-6 w-px bg-[#e5e0d3] mx-2"></div>
+
+                <div class="flex gap-2">
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#4c1d95]" data-rank="A+">A+ 鋒銳</button>
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#1e40af]" data-rank="A">A 鐵壁</button>
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#1d4ed8]" data-rank="A-">A- 悲劇</button>
+                </div>
+                <div class="h-6 w-px bg-[#e5e0d3] mx-2"></div>
+
+                <div class="flex gap-2">
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#065f46]" data-rank="B+">B+ 強者</button>
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#475569]" data-rank="B">B 能臣</button>
+                </div>
+                <div class="h-6 w-px bg-[#e5e0d3] mx-2"></div>
+                
+                <div class="flex gap-2">
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#92400e]" data-rank="C+">C+ 流寇</button>
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#52525b]" data-rank="C">C 敗國</button>
+                    <button class="filter-btn px-3 py-1 rounded text-xs text-[#450a0a]" data-rank="C-">C- 悲劇</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 名將畫廊 (Grid) -->
+        <div id="gridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-32">
+            <!-- JS Rendered Cards -->
+        </div>
+    </div>
+
+    <!-- 戰情室面板 (War Room) - 木質風格 -->
+    <div id="warRoomPanel" class="bottom-panel fixed bottom-0 left-0 right-0 bg-[#f5f5f4] z-40 transform translate-y-full flex flex-col h-[360px] border-t-4 border-[#2c2826]">
+        <div class="bg-[#1c1917] text-[#e7e5e4] px-6 py-3 flex justify-between items-center shrink-0 h-14 cursor-pointer shadow-md" onclick="togglePanelSize('warRoom')">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-chess text-[#d4af37] text-xl"></i>
+                <div>
+                    <h3 class="font-bold text-base tracking-widest font-serif">模擬戰情室</h3>
+                </div>
+            </div>
+            <div id="warRoomStatus" class="hidden flex-1 text-center px-4">
+                <span class="text-sm text-[#d4af37] font-serif animate-pulse">正在點將：<span class="selecting-role-text font-bold">...</span></span>
+            </div>
+            <div class="flex gap-4 text-[#a8a29e]">
+                <button onclick="event.stopPropagation(); clearTeams()" class="hover:text-white transition-colors"><i class="fa-solid fa-rotate-left"></i></button>
+                <button onclick="event.stopPropagation(); togglePanelSize('warRoom')" class="hover:text-white transition-colors"><i class="fa-solid fa-window-minimize relative -top-1"></i></button>
+                <button onclick="event.stopPropagation(); closeAllPanels()" class="hover:text-red-400 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+        </div>
+        
+        <!-- 羈絆通知列 -->
+        <div id="affinityBar" class="bg-[#e7e5e4] px-6 py-1.5 flex gap-3 overflow-x-auto h-10 shrink-0 border-b border-[#d6d3c9] hidden items-center shadow-inner"></div>
+        
+        <div id="warRoomContent" class="flex-1 overflow-x-auto p-6 bg-[#f0ede6] flex gap-8 justify-center items-stretch min-w-[900px]">
+            <!-- 紅軍 -->
+            <div class="flex-1 max-w-xl bg-[#fffdf9] rounded-lg border border-[#fecaca] shadow-sm p-4 flex flex-col gap-3 relative">
+                <div class="absolute top-0 left-0 w-full h-1 bg-red-600 rounded-t-lg"></div>
+                <div class="flex justify-between items-center border-b border-red-100 pb-2 mb-1">
+                    <h4 class="font-bold text-[#7f1d1d] text-lg font-serif"><i class="fa-solid fa-flag text-red-600 mr-2"></i>紅軍 (Red)</h4>
+                    <span id="redPower" class="text-xs font-bold bg-red-100 text-red-800 px-2 py-1 rounded font-mono">0/5</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 flex-1" id="red-slots-container"></div>
+            </div>
+            
+            <!-- VS -->
+            <div class="flex flex-col justify-center items-center gap-3">
+                <div class="w-14 h-14 rounded-full bg-[#2c2826] text-[#d4af37] flex items-center justify-center font-black text-xl italic shadow-xl border-4 border-[#f5f5f4] z-10 serif">VS</div>
+                <button onclick="startTeamBattle()" id="startBattleBtn" disabled class="btn-gold px-6 py-3 rounded-lg font-bold font-serif tracking-widest text-lg disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed transition-all transform active:scale-95">
+                    開戰
+                </button>
+            </div>
+            
+            <!-- 藍軍 -->
+            <div class="flex-1 max-w-xl bg-[#fffdf9] rounded-lg border border-[#bfdbfe] shadow-sm p-4 flex flex-col gap-3 relative">
+                <div class="absolute top-0 left-0 w-full h-1 bg-blue-600 rounded-t-lg"></div>
+                <div class="flex justify-between items-center border-b border-blue-100 pb-2 mb-1">
+                    <h4 class="font-bold text-[#1e3a8a] text-lg font-serif"><i class="fa-solid fa-flag text-blue-600 mr-2"></i>藍軍 (Blue)</h4>
+                    <span id="bluePower" class="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono">0/5</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 flex-1" id="blue-slots-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 魂穿面板 (Soul Mode) - 紫氣東來 -->
+    <div id="soulModePanel" class="bottom-panel fixed bottom-0 left-0 right-0 bg-[#f5f5f4] z-40 transform translate-y-full flex flex-col h-[300px] border-t-4 border-[#581c87]">
+        <div class="bg-[#3b0764] text-[#f3e8ff] px-6 py-3 flex justify-between items-center shrink-0 h-14 cursor-pointer shadow-md" onclick="togglePanelSize('soulMode')">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-yin-yang text-[#d8b4fe] text-xl"></i>
+                <h3 class="font-bold text-base tracking-widest font-serif">魂穿模擬器</h3>
+            </div>
+            <div id="soulModeStatus" class="hidden flex-1 text-center px-4">
+                <span class="text-sm text-[#d8b4fe] font-serif animate-pulse">正在選擇：<span class="selecting-role-text font-bold">...</span></span>
+            </div>
+            <div class="flex gap-4 text-[#d8b4fe]">
+                <button onclick="event.stopPropagation(); clearSoulSlots()" class="hover:text-white transition-colors"><i class="fa-solid fa-rotate-left"></i></button>
+                <button onclick="event.stopPropagation(); togglePanelSize('soulMode')" class="hover:text-white transition-colors"><i class="fa-solid fa-window-minimize relative -top-1"></i></button>
+                <button onclick="event.stopPropagation(); closeAllPanels()" class="hover:text-white transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+        </div>
+        <div id="soulModeContent" class="flex-1 overflow-x-auto p-8 bg-[#f3e8ff] bg-opacity-20 flex gap-12 justify-center items-center">
+            
+            <!-- Host -->
+            <div onclick="selectSoulSlot('host')" id="slot-soul-host" class="role-slot w-72 h-40 rounded-xl bg-white p-5 cursor-pointer flex flex-col justify-center items-center gap-3 shadow-sm border border-slate-300 hover:border-slate-500 transition-all hover:shadow-md relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-1 h-full bg-slate-400"></div>
+                <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-2xl group-hover:bg-slate-700 group-hover:text-white transition-colors"><i class="fa-solid fa-user-injured"></i></div>
+                <div class="text-center">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">HOST</p>
+                    <p class="font-bold text-slate-800 font-serif text-lg">肉身 (宿主)</p>
+                    <p id="hostNameDisplay" class="text-sm font-bold text-indigo-900 truncate w-56 slot-name mt-1 border-t border-dashed border-slate-300 pt-1">點擊選擇...</p>
+                </div>
+            </div>
+
+            <!-- Arrow -->
+            <div class="flex flex-col justify-center items-center text-[#7e22ce] opacity-50">
+                <i class="fa-solid fa-arrow-right-long text-4xl animate-pulse"></i>
+                <span class="text-xs font-serif mt-2 tracking-widest">穿越</span>
+            </div>
+
+            <!-- Soul -->
+            <div onclick="selectSoulSlot('soul')" id="slot-soul-soul" class="role-slot w-72 h-40 rounded-xl bg-white p-5 cursor-pointer flex flex-col justify-center items-center gap-3 shadow-sm border border-purple-300 hover:border-purple-500 transition-all hover:shadow-md relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-1 h-full bg-purple-500"></div>
+                <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-2xl group-hover:bg-purple-600 group-hover:text-white transition-colors"><i class="fa-solid fa-ghost"></i></div>
+                <div class="text-center">
+                    <p class="text-xs font-bold text-purple-400 uppercase tracking-[0.2em] mb-1">SOUL</p>
+                    <p class="font-bold text-purple-900 font-serif text-lg">靈魂 (穿越者)</p>
+                    <p class="text-sm font-bold text-purple-700 truncate w-56 slot-name mt-1 border-t border-dashed border-purple-200 pt-1">點擊選擇...</p>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <div class="ml-8">
+                <button onclick="handleSoulAction()" id="startSoulBtn" disabled class="btn-ink px-8 py-4 rounded-xl font-bold font-serif text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-bolt"></i> 逆天改命</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 絕境挑戰 (Scenarios) -->
+    <div id="scenarioModePanel" class="bottom-panel fixed bottom-0 left-0 right-0 bg-[#fff1f2] border-t-4 border-[#be123c] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] z-40 transform translate-y-full flex flex-col h-[380px]">
+        <div class="bg-[#881337] text-white px-6 py-3 flex justify-between items-center shrink-0 h-14">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-fire-flame-curved text-[#fda4af] text-xl"></i>
+                <h3 class="font-bold text-base tracking-widest font-serif">絕境挑戰 <span class="text-xs bg-[#be123c] px-2 py-0.5 rounded ml-2 text-white font-sans font-normal opacity-80">Hell Scenarios</span></h3>
+            </div>
+            <button onclick="closeAllPanels()" class="text-[#fda4af] hover:text-white transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div id="scenarioContent" class="flex-1 overflow-x-auto p-8 bg-[#fff1f2] flex gap-5 items-center">
+            <!-- Scenarios injected via JS -->
+        </div>
+    </div>
+
+    <!-- AI Modal -->
+    <div id="aiModal" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 modal-overlay" onclick="closeModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#fffdf9] rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col transition-all border border-[#e5e0d3]">
+            
+            <!-- Header -->
+            <div class="bg-[#1c1917] text-[#e5e5e5] p-5 flex justify-between items-center shrink-0 border-b-4 border-[#d4af37]">
+                <h3 id="modalTitle" class="text-xl font-bold font-serif tracking-wide flex items-center gap-3">
+                    <i class="fa-solid fa-scroll text-[#d4af37]"></i> <span>系統推演</span>
+                </h3>
+                <div class="flex gap-3 items-center">
+                    <button id="clearMemoryBtn" onclick="clearCurrentMemory()" class="hidden text-xs bg-[#7f1d1d] hover:bg-red-700 text-white px-3 py-1.5 rounded transition-colors shadow-sm font-serif tracking-wider" title="清除記憶"><i class="fa-solid fa-eraser mr-1"></i>忘卻</button>
+                    <button onclick="closeModal()" class="text-[#a8a29e] hover:text-white px-2 transition-colors"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                </div>
+            </div>
+            
+            <!-- Chat Interface -->
+            <div id="chatContainer" class="hidden flex flex-col flex-1 min-h-0 bg-[#fcfaf5] overflow-hidden relative">
+                <div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: radial-gradient(#d6d3c9 1px, transparent 1px); background-size: 20px 20px;"></div>
+                <div id="chatHistory" class="flex-1 overflow-y-auto p-6 flex flex-col gap-4 custom-scrollbar z-10 overscroll-contain"></div>
+                <div class="p-5 border-t border-[#e5e0d3] bg-white flex gap-3 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-20 shrink-0">
+                    <input type="text" id="chatInput" placeholder="請輸入您的問題..." class="flex-1 px-5 py-3 border border-[#d6d3c9] rounded-lg focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-all bg-[#fafaf9] font-serif text-[#2c2826]" onkeypress="if(event.key==='Enter') sendChatMessage()">
+                    <button onclick="sendChatMessage()" class="btn-ink px-6 py-3 rounded-lg font-bold"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- Content Interface -->
+            <div id="contentContainer" class="flex flex-col flex-1 min-h-0 overflow-hidden relative bg-[#fffdf9]">
+                <div class="p-10 overflow-y-auto custom-scrollbar flex-grow h-full overscroll-contain">
+                    <!-- Loading -->
+                    <div id="loadingState" class="hidden flex-col items-center justify-center py-20 space-y-6">
+                        <div class="flex space-x-4">
+                            <div class="w-3 h-3 bg-[#d4af37] rounded-full typing-dot"></div>
+                            <div class="w-3 h-3 bg-[#d4af37] rounded-full typing-dot" style="animation-delay: 0.2s"></div>
+                            <div class="w-3 h-3 bg-[#d4af37] rounded-full typing-dot" style="animation-delay: 0.4s"></div>
+                        </div>
+                        <p id="loadingText" class="text-[#57534e] font-serif tracking-widest animate-pulse">正在翻閱史籍...</p>
+                    </div>
+                    
+                    <!-- Chart -->
+                    <div id="radarChartContainer" class="chart-container hidden mx-auto max-w-md mb-8 bg-white p-4 rounded-xl border border-[#e5e0d3] shadow-sm"><canvas id="radarChart"></canvas></div>
+                    
+                    <!-- Markdown Text -->
+                    <div id="modalContent" class="prose prose-slate max-w-none font-serif text-[#2c2826]"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit/Revision Hub (Standalone) -->
+    <div id="editHubModal" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 modal-overlay" onclick="closeEditHub()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#fffdf9] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-[#e5e0d3]">
+            <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center shrink-0 border-b-4 border-[#60a5fa]">
+                <h3 class="text-xl font-bold font-serif flex items-center gap-3"><i class="fa-solid fa-pen-nib"></i> 史觀辯論庭</h3>
+                <button onclick="closeEditHub()" class="text-blue-200 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="p-8 bg-[#f8fafc] flex flex-col gap-6 overflow-y-auto">
+                <!-- Search Section -->
+                <div id="editSearchSection">
+                    <label class="block text-sm font-bold text-slate-700 mb-2 font-serif">搜尋要修訂的名將：</label>
+                    <div class="flex gap-2 relative">
+                        <input type="text" id="editSearchInput" placeholder="輸入名將姓名..." class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-serif" list="generalsList">
+                        <datalist id="generalsList"></datalist>
+                        <button onclick="loadGeneralForEdit()" class="bg-[#1e3a8a] hover:bg-[#1e40af] text-white px-5 py-2 rounded-lg font-bold font-serif shadow-sm transition-all">載入</button>
+                    </div>
+                </div>
+
+                <!-- Form Section -->
+                <div id="editFormSection" class="hidden flex flex-col gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="grid grid-cols-4 gap-4 mb-3">
+                            <div class="col-span-1">
+                                <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">評級</label>
+                                <select id="editRank" class="w-full p-2 border border-slate-300 rounded font-bold text-slate-800 bg-slate-50 focus:border-blue-500 outline-none">
+                                    <option value="S+">S+</option><option value="S">S</option><option value="S-">S-</option>
+                                    <option value="A+">A+</option><option value="A">A</option><option value="A-">A-</option>
+                                    <option value="B+">B+</option><option value="B">B</option>
+                                    <option value="C+">C+</option><option value="C">C</option><option value="C-">C-</option>
+                                </select>
+                            </div>
+                            <div class="col-span-3">
+                                <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">稱號</label>
+                                <input id="editTitle" class="w-full p-2 border border-slate-300 rounded text-slate-800 bg-slate-50 focus:border-blue-500 outline-none font-serif">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">特質標籤</label>
+                            <input id="editTag" class="w-full p-2 border border-slate-300 rounded text-slate-800 bg-slate-50 focus:border-blue-500 outline-none">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">判詞</label>
+                            <input id="editPoem" class="w-full p-2 border border-slate-300 rounded text-slate-800 bg-slate-50 focus:border-blue-500 outline-none italic font-serif">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">簡評</label>
+                            <textarea id="editDesc" class="w-full p-2 border border-slate-300 rounded text-slate-800 bg-slate-50 focus:border-blue-500 outline-none h-24 text-sm leading-relaxed"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- AI Consultant -->
+                    <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                        <label class="block text-xs font-bold text-indigo-800 mb-2 flex items-center gap-2"><i class="fa-solid fa-gavel"></i> AI 參謀意見</label>
+                        <div class="flex gap-2 mb-3">
+                            <input id="consultInput" class="flex-1 p-2 border border-indigo-200 rounded text-sm bg-white focus:outline-none focus:border-indigo-400" placeholder="例如：我覺得白起應該降級，因為太殘暴...">
+                            <button onclick="askAIConsultant()" class="bg-indigo-600 text-white px-4 py-1 rounded text-xs font-bold hover:bg-indigo-700 transition-colors">詢問</button>
+                        </div>
+                        <div id="consultResult" class="text-xs text-indigo-900 hidden bg-white p-3 rounded border border-indigo-100 italic leading-relaxed shadow-sm"></div>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="saveGeneralEdits()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold shadow-md transform active:scale-95 transition-all">確認修訂</button>
+                        <button id="deleteGeneralBtn" onclick="deleteCustomGeneral()" class="hidden bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-bold shadow-md transform active:scale-95 transition-all"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="closeEditHub()" class="px-6 py-3 border border-slate-300 rounded-lg hover:bg-slate-100 text-slate-600 font-bold transition-colors">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add General Modal -->
+    <div id="addModal" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 modal-overlay" onclick="closeAddModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#fffdf9] rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-[#e5e0d3]">
+            <div class="bg-[#047857] text-white p-5 flex justify-between items-center border-b-4 border-[#34d399]">
+                <h3 class="text-xl font-bold font-serif flex items-center gap-2"><i class="fa-solid fa-scroll text-[#d1fae5]"></i> 名將招募處</h3>
+                <button onclick="closeAddModal()" class="text-emerald-200 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-8 bg-[#f8fafc] flex flex-col gap-6">
+                <div id="addStep1">
+                    <label class="block text-sm font-bold text-slate-700 mb-3 font-serif">請輸入歷史名將姓名：</label>
+                    <div class="flex gap-3">
+                        <input type="text" id="addInputName" placeholder="例如：王猛、陳湯..." class="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-serif">
+                        <button onclick="analyzeNewGeneral()" class="bg-[#047857] hover:bg-[#059669] text-white px-6 py-3 rounded-lg font-bold font-serif shadow-sm transition-all">AI 評鑑</button>
+                    </div>
+                </div>
+                <div id="addLoading" class="hidden flex-col items-center justify-center py-8">
+                    <div class="flex space-x-3 mb-4">
+                        <div class="w-3 h-3 bg-[#059669] rounded-full typing-dot"></div><div class="w-3 h-3 bg-[#059669] rounded-full typing-dot" style="animation-delay:0.2s"></div><div class="w-3 h-3 bg-[#059669] rounded-full typing-dot" style="animation-delay:0.4s"></div>
+                    </div>
+                    <p class="text-sm text-slate-500 font-serif animate-pulse">正在翻閱史籍...</p>
+                </div>
+                <div id="addStep2" class="hidden flex flex-col gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-emerald-100 shadow-sm flex flex-col gap-3">
+                        <div class="flex gap-3">
+                            <input id="newRank" class="w-20 p-2 border border-slate-300 rounded text-center font-bold text-emerald-800 bg-emerald-50 focus:border-emerald-500 outline-none" placeholder="Rank">
+                            <input id="newTitle" class="flex-1 p-2 border border-slate-300 rounded text-sm focus:border-emerald-500 outline-none" placeholder="稱號">
+                        </div>
+                        <input id="newTag" class="w-full p-2 border border-slate-300 rounded text-sm focus:border-emerald-500 outline-none" placeholder="特質標籤">
+                        <input id="newPoem" class="w-full p-2 border border-slate-300 rounded text-sm italic font-serif text-slate-600 focus:border-emerald-500 outline-none" placeholder="判詞">
+                        <textarea id="newDesc" class="w-full p-2 border border-slate-300 rounded text-sm h-24 leading-relaxed focus:border-emerald-500 outline-none" placeholder="簡評"></textarea>
+                    </div>
+                    <button onclick="saveNewGeneral()" class="w-full bg-[#047857] hover:bg-[#059669] text-white py-3 rounded-lg font-bold font-serif shadow-md transform active:scale-95 transition-all">確認招募入冊</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = "AIzaSyAGmatQ04ZlqvceuXTBm9QtA0aogZ28R2I"; 
+
+        // 完整數據 (129 Generals)
+        const staticGeneralsData = [
+            // S+ (5)
+            {name:"成吉思汗",rank:"S+",title:"世界征服者",tag:"上帝之鞭",desc:"戰略與版圖的人類極限，怯薛軍與千戶制締造者。",poem:"鐵騎鑿空歐亞路，金帳鞭斷萬山脊。"},
+            {name:"速不台",rank:"S+",title:"萬里兵鋒",tag:"最強戰役指揮",desc:"從東亞打到多瑙河，大兵團長距離機動的巔峰。",poem:"飲馬多瑙驚泰西，雪夜彎弓射大羅。"},
+            {name:"韓信",rank:"S+",title:"兵仙",tag:"戰術天花板",desc:"背水一戰、十面埋伏，純軍事技術的極致。",poem:"背水奇謀吞趙魏，十面楚歌滅霸王。"},
+            {name:"白起",rank:"S+",title:"人屠",tag:"殲滅戰鼻祖",desc:"長平坑殺四十萬，改變了戰國戰爭的本質。",poem:"憑君莫話封侯事，一將功成萬骨枯。"},
+            {name:"李世民",rank:"S+",title:"天策上將",tag:"六邊形戰士",desc:"親冒矢石的開國皇帝，文治武功的最高標準。",poem:"三千玄甲破萬敵，天策旌旗定中原。"},
+            // S (10)
+            {name:"劉邦",rank:"S",title:"漢高祖",tag:"戰略之神",desc:"駕馭韓信、彭越的終極操盤手，容錯率極高的統帥。",poem:"大風起兮雲飛揚，威加海內兮歸故鄉。"},
+            {name:"李靖",rank:"S",title:"大唐軍神",tag:"出將入相",desc:"軍事理論集大成者，滅突厥、平蕭銑，近乎S+。",poem:"北擒可汗清大漠，南定蕭銑六花開。"},
+            {name:"霍去病",rank:"S",title:"冠軍侯",tag:"進攻圖騰",desc:"封狼居胥，閃電戰鼻祖，漢匈戰爭的最強鋒刃。",poem:"匈奴未滅不為家，封狼居胥第一人。"},
+            {name:"衛青",rank:"S",title:"帝國長城",tag:"大兵團標竿",desc:"七戰七捷，收復河套，穩重與大局觀的典範。",poem:"但使龍城飛將在，不教胡馬度陰山。"},
+            {name:"王翦",rank:"S",title:"滅三國",tag:"戰國計算機",desc:"統一天下的執行者，求田問舍展現頂級政治智慧。",poem:"請田問舍安秦帝，六十萬甲吞楚疆。"},
+            {name:"劉裕",rank:"S",title:"北伐戰神",tag:"南朝第一帝",desc:"氣吞萬里如虎，卻月陣以步克騎，滅南燕後秦。",poem:"想當年，金戈鐵馬，氣吞萬里如虎。"},
+            {name:"吳起",rank:"S",title:"兵家亞聖",tag:"一生無敗",desc:"魏武卒改革宗師，軍事與政治雙修的改革家。",poem:"西河立信魏武卒，楚悼崩時萬箭穿。"},
+            {name:"宇文泰",rank:"S",title:"府兵之祖",tag:"關隴締造者",desc:"創立府兵制，沙苑之戰以弱勝強，奠定隋唐基業。",poem:"沙苑蘆深破高歡，關隴基業傳隋唐。"},
+            {name:"徐達",rank:"S",title:"大明第一將",tag:"開國基石",desc:"北伐滅元，驅逐韃虜，穩如泰山的統帥。",poem:"提師北伐清沙漠，開國功臣第一人。"},
+            {name:"林彪",rank:"S",title:"紅軍之鷹",tag:"現代軍神",desc:"百萬大軍統帥，三三制與現代戰爭體系的締造者。",poem:"運籌帷幄算無遺，百萬雄師過大江。"},
+            // S- (17)
+            {name:"項羽",rank:"S-",title:"西楚霸王",tag:"戰術之神",desc:"彭城之戰S++，但戰略C，悲劇英雄的極致。",poem:"生當作人傑，死亦為鬼雄。"},
+            {name:"拓跋燾",rank:"S-",title:"北魏太武帝",tag:"統一北方",desc:"結束五胡亂世，閃電戰大師，飲馬長江。",poem:"掃清十六國煙塵，佛狸祠下亦英雄。"},
+            {name:"高歡",rank:"S-",title:"神武帝",tag:"北朝曹操",desc:"關東霸主，起於微末，宇文泰的一生之敵。",poem:"敕勒川上射雕手，玉壁城下英雄淚。"},
+            {name:"努爾哈赤",rank:"S-",title:"後金太祖",tag:"八旗始祖",desc:"薩爾滸神蹟，以6萬破47萬，清朝奠基人。",poem:"十三遺甲起白山，薩爾滸邊破大明。"},
+            {name:"伯顏",rank:"S-",title:"滅宋統帥",tag:"元朝王翦",desc:"跨江滅南宋，指揮大兵團水陸協同作戰。",poem:"百萬貔貅渡大江，一戰焦山定臨安。"},
+            {name:"多爾袞",rank:"S-",title:"攝政王",tag:"定鼎中原",desc:"山海關決策S+，確立清朝入主中原的大戰略。",poem:"鐵騎入關掃流寇，定鼎燕京攝帝位。"},
+            {name:"諸葛亮",rank:"S-",title:"武侯",tag:"軍制宗師",desc:"以弱抗強，六出祁山，治軍與發明S級。",poem:"出師未捷身先死，長使英雄淚滿襟。"},
+            {name:"司馬懿",rank:"S-",title:"塚虎",tag:"三國終結者",desc:"忍者之神，熬死所有對手，平遼東展現閃擊能力。",poem:"忍將白髮對瑤琴，一劍霜寒定九州。"},
+            {name:"爾朱榮",rank:"S-",title:"北朝項羽",tag:"亂世魔星",desc:"7000騎破30萬，戰術S+，政治D的梟雄。",poem:"河陰血染天闕紅，七千精騎踏葛榮。"},
+            {name:"曹操",rank:"S-",title:"魏武帝",tag:"橫槊賦詩",desc:"戰略與政治S，但有赤壁、漢中之敗。",poem:"老驥伏櫪志千里，東臨碣石有遺篇。"},
+            {name:"朱棣",rank:"S-",title:"永樂帝",tag:"馬上皇帝",desc:"五征漠北，靖難之役以一隅敵全國。",poem:"靖難兵起清君側，五出漠北掃胡塵。"},
+            {name:"李勣",rank:"S-",title:"徐懋功",tag:"大唐雙壁",desc:"滅高句麗，政治智慧S，明哲保身的典範。",poem:"東平高麗雪前恥，智避權鋒保令名。"},
+            {name:"蘇定方",rank:"S-",title:"滅國狂魔",tag:"外戰之王",desc:"前後滅三國，擒三主，戰績華麗但缺乏宗師感。",poem:"雪夜襲營擒可汗，前後滅國奏凱歌。"},
+            {name:"岳飛",rank:"S-",title:"武穆",tag:"岳家軍魂",desc:"撼山易撼岳家軍難，戰術S，政治悲劇。",poem:"三十功名塵與土，八千里路雲和月。"},
+            {name:"粟裕",rank:"S-",title:"戰神",tag:"微操大師",desc:"淮海戰役總指揮，大兵團作戰的天才，戰略層級受限。",poem:"七戰七捷威名震，百萬軍中取上將。"},
+            {name:"郭子儀",rank:"S-",title:"汾陽王",tag:"再造大唐",desc:"政治S+，安史之亂擎天柱，功高不震主。",poem:"權傾天下而朝不忌，功蓋一代而主不疑。"},
+            {name:"彭德懷",rank:"S-",title:"彭大將軍",tag:"硬仗專家",desc:"意志力S，抗美援朝立國之戰，擅打逆風局。",poem:"誰敢橫刀立馬，唯我彭大將軍。"},
+            // A+ (24)
+            {name:"王忠嗣",rank:"A+",title:"四鎮節度使",tag:"儲帥之師",desc:"掌控萬里邊防，郭子儀與李光弼的恩師，因反戰而死。",poem:"佩印四鎮安天下，不教石堡萬骨枯。"},
+            {name:"孫武",rank:"A+",title:"兵聖",tag:"理論之祖",desc:"《孫子兵法》作者，供在神壇的宗師。",poem:"兵無常勢水無形，十三篇章萬古名。"},
+            {name:"毛澤東",rank:"A+",title:"戰略家",tag:"游擊戰神",desc:"戰略與軍事哲學S++，不親臨指揮。",poem:"敵進我退疲敵術，星火燎原定九州。"},
+            {name:"朱德",rank:"A+",title:"紅軍之父",tag:"建軍宗師",desc:"軍隊締造者，地位高於實戰指揮。",poem:"南昌城頭第一槍，太行山上把名揚。"},
+            {name:"李牧",rank:"A+",title:"戰國屏障",tag:"防禦大師",desc:"獵殺匈奴十萬，趙國最後的守護神。",poem:"獵殺匈奴十萬騎，可惜讒言殺良將。"},
+            {name:"周瑜",rank:"A+",title:"公瑾",tag:"水戰巔峰",desc:"赤壁一戰定三國，英年早逝的儒將。",poem:"遙想公瑾當年，小喬初嫁了，雄姿英發。"},
+            {name:"陸遜",rank:"A+",title:"社稷之臣",tag:"夷陵火攻",desc:"火燒連營，東吳中流砥柱，防守反擊大師。",poem:"火燒連營七百里，書生拜將護江東。"},
+            {name:"孟珙",rank:"A+",title:"防禦大師",tag:"機動防禦",desc:"南宋擎天柱，一人統御三分之二戰線。",poem:"機動防禦撐半壁，襄陽城頭哭遺民。"},
+            {name:"于謙",rank:"A+",title:"救時宰相",tag:"北京保衛戰",desc:"社稷為重君為輕，大明續命人。",poem:"粉身碎骨全不惜，九門死戰護京華。"},
+            {name:"李光弼",rank:"A+",title:"中興第一",tag:"太原奇蹟",desc:"太原保衛戰，安史之亂軍事貢獻第一人。",poem:"太原城下出奇謀，地道借箭退叛軍。"},
+            {name:"拓跋珪",rank:"A+",title:"道武帝",tag:"參合陂屠夫",desc:"北魏開國，坑殺後燕八萬，建立北朝基業。",poem:"參合陂頭殺氣高，北魏開基第一皇。"},
+            {name:"孫臏",rank:"A+",title:"兵家亞聖",tag:"鬼謀殘軀",desc:"圍魏救趙，減灶誘敵，智商碾壓對手。",poem:"減灶誘敵除龐涓，圍魏救趙史無前。"},
+            {name:"伍子胥",rank:"A+",title:"復仇男神",tag:"疲楚戰略",desc:"柏舉之戰3萬破20萬，游擊戰鼻祖。",poem:"掘墓鞭屍雪父仇，日暮途遠倒行施。"},
+            {name:"白崇禧",rank:"A+",title:"小諸葛",tag:"戰略大師",desc:"北伐與抗戰智囊，國軍戰略天花板。",poem:"小諸葛名震中原，龍潭大捷定東南。"},
+            {name:"左宗棠",rank:"A+",title:"湘上農人",tag:"收復新疆",desc:"戰略遠見S，抬棺出征，晚清外戰全勝。",poem:"大將籌邊人未還，湖湘子弟滿天山。"},
+            {name:"戚繼光",rank:"A+",title:"武毅公",tag:"革新宗師",desc:"鴛鴦陣，軍事工程學，現代練兵之祖。",poem:"封侯非我意，但願海波平。"},
+            {name:"班超",rank:"A+",title:"定遠侯",tag:"西域守護",desc:"外交特種戰，三十六人定西域，以夷制夷。",poem:"投筆從戎萬里去，三十六國盡封侯。"},
+            {name:"木華黎",rank:"A+",title:"東方經略",tag:"獨當一面",desc:"成吉思汗的分身，全權負責滅金戰事。",poem:"受命太師開漢地，孤軍百戰定中原。"},
+            {name:"僕固懷恩",rank:"A+",title:"悲劇泰坦",tag:"滿門忠烈",desc:"戰場瘋狗，被逼造反的安史名將。",poem:"滿門忠烈皆為國，奈何被逼反長安。"},
+            {name:"陳慶之",rank:"A+",title:"白袍戰神",tag:"戰術神蹟",desc:"7000白袍軍橫掃北魏，47戰全勝。",poem:"名師大將莫自牢，千軍萬馬避白袍。"},
+            {name:"鄧艾",rank:"A+",title:"滅蜀首功",tag:"地理大師",desc:"偷渡陰平，滾氈度崖，特種戰略奇襲。",poem:"裹氈滾落陰平道，從此蜀漢無劍閣。"},
+            {name:"常遇春",rank:"A+",title:"大明先鋒",tag:"摧鋒陷陣",desc:"單兵能力S+，常十萬橫行天下。",poem:"十萬貔貅橫天下，一槍獨斷採石磯。"},
+            {name:"李定國",rank:"A+",title:"南明武穆",tag:"兩蹶名王",desc:"陣斬孔有德、尼堪，南明最後的輝煌。",poem:"兩蹶名王震天下，孤臣血淚灑邊疆。"},
+            {name:"呂蒙",rank:"A+",title:"白衣渡江",tag:"刺客統帥",desc:"攻心為上，奪荊州，關羽的終結者。",poem:"吳下阿蒙今已非，白衣渡江擒武聖。"},
+            {name:"王賁",rank:"A+",title:"滅國執行",tag:"水攻大師",desc:"水淹大梁，滅魏燕齊，完美的執行者。",poem:"黃河水灌大梁城，北虜燕王定齊魯。"},
+            // A (15)
+            {name:"馬援",rank:"A",title:"伏波將軍",tag:"馬革裹屍",desc:"東漢救火隊長，平定邊疆，老當益壯。",poem:"聚米為山籌邊策，馬革裹屍英雄願。"},
+            {name:"楊素",rank:"A",title:"越國公",tag:"滅陳總管",desc:"風格冷酷迅猛，隋朝統一天下的推手。",poem:"樓船夜下廣陵濤，從此江南屬大隋。"},
+            {name:"藍玉",rank:"A",title:"大明鋒刃",tag:"捕魚兒海",desc:"穿越戈壁殲滅北元朝廷，政治低能。",poem:"捕魚兒海擒偽主，驕橫跋扈致殺身。"},
+            {name:"傅友德",rank:"A",title:"潁國公",tag:"七戰七勝",desc:"平定雲貴，穩健無短板的統帥。",poem:"七戰七勝平雲貴，明初虎將第三人。"},
+            {name:"孫立人",rank:"A",title:"叢林之狐",tag:"東方隆美爾",desc:"仁安羌大捷，現代戰術標竿，美械軍魂。",poem:"仁安羌邊救英軍，叢林之狐震緬甸。"},
+            {name:"王保保",rank:"A",title:"擴廓帖木兒",tag:"元朝支柱",desc:"徐達的一生之敵，防禦與反擊大師。",poem:"塞北秋風悲戰馬，中原落日哭英雄。"},
+            {name:"薛岳",rank:"A",title:"長沙之虎",tag:"天爐戰法",desc:"抗日殺敵最多，戰區防禦專家。",poem:"天爐戰法燒日寇，長沙城下鬼神愁。"},
+            {name:"袁崇煥",rank:"A",title:"關寧督師",tag:"寧遠大捷",desc:"憑堅城用大砲，但擅殺毛文龍釀成大錯。",poem:"寧遠城頭炮聲隆，身死西市恨無窮。"},
+            {name:"裴行儉",rank:"A",title:"儒將",tag:"智取西域",desc:"蘇定方傳人，兵不血刃擒敵酋。",poem:"智取西域擒突厥，一代儒將繼蘇定。"},
+            {name:"杜預",rank:"A",title:"杜武庫",tag:"破竹統帥",desc:"滅吳元勳，文武雙全的儒帥。",poem:"勢如破竹平江東，文武雙全杜武庫。"},
+            {name:"忽必烈",rank:"A",title:"元世祖",tag:"混一宇內",desc:"戰略包圍滅大理S，但征日失敗B。",poem:"革囊渡江襲大理，金甌無缺混一統。"},
+            {name:"施琅",rank:"A",title:"海霹靂",tag:"平台主將",desc:"澎湖海戰S級，風信操盤手。",poem:"南風一夜渡澎湖，從此海疆歸版圖。"},
+            {name:"李鴻章",rank:"A",title:"裱糊匠",tag:"北洋建軍",desc:"建軍之功S，外戰失敗C，近代化推手。",poem:"勞勞車馬未離鞍，臨事方知一死難。"},
+            {name:"張巡",rank:"A",title:"守城之魔",tag:"睢陽死守",desc:"以人為糧，極限防禦，阻止叛軍南下。",poem:"睢陽齒碎城猶在，江淮安堵唐祚延。"},
+            {name:"狄青",rank:"A",title:"面涅將軍",tag:"夜襲崑崙關",desc:"宋代之光，戴銅面具衝陣，被文官壓制。",poem:"銅面夜襲崑崙險，卻被文臣筆底刪。"},
+            // A- (20)
+            {name:"虞允文",rank:"A-",title:"丞相",tag:"文人救國",desc:"采石磯大捷，書生退敵，挽救南宋國運。",poem:"書生輕議封侯事，采石磯頭破虜師。"},
+            {name:"哲別",rank:"A-",title:"蒙古神箭",tag:"第一先鋒",desc:"速不台最佳拍檔，曼古歹戰術大師。",poem:"彎弓射鵰落飛雁，鐵騎西征第一鋒。"},
+            {name:"桓溫",rank:"A-",title:"大司馬",tag:"梟雄野心",desc:"滅成漢，三次北伐，東晉最有權勢的權臣。",poem:"樹猶如此人何堪，流芳遺臭兩為難。"},
+            {name:"關羽",rank:"A-",title:"武聖",tag:"威震華夏",desc:"水淹七軍S，大意荊州C，性格傲慢的悲劇。",poem:"水淹七軍威華夏，大意荊州悔已遲。"},
+            {name:"田單",rank:"A-",title:"安平君",tag:"火牛復國",desc:"一生只為這一戰，火牛陣奇蹟。",poem:"火牛千頭衝敵陣，七十城池一夜還。"},
+            {name:"俞大猷",rank:"A-",title:"俞龍",tag:"武學宗師",desc:"棍法無敵，抗倭名將，仕途坎坷。",poem:"劍經一卷傳千古，獨有俞龍老更剛。"},
+            {name:"孫傳庭",rank:"A-",title:"秦督",tag:"大明長城",desc:"傳庭死而明亡，崇禎催命的悲劇。",poem:"傳庭死而明亡矣，潼關魂斷帝城秋。"},
+            {name:"盧象昇",rank:"A-",title:"盧忠烈",tag:"天雄死士",desc:"天雄軍魂，巨鹿戰死，忠誠的極致。",poem:"知君已作千秋骨，猶是人間第一流。"},
+            {name:"吳三桂",rank:"A-",title:"平西王",tag:"亂世梟雄",desc:"關寧鐵騎統帥，戰鬥力A+，人品D。",poem:"慟哭六軍俱縞素，衝冠一怒為紅顏。"},
+            {name:"李如松",rank:"A-",title:"提督",tag:"抗日鐵鎚",desc:"平壤大捷，遼東鐵騎硬撼日軍，英年早逝。",poem:"提師十萬入朝鮮，平壤城頭炮火連。"},
+            {name:"張遼",rank:"A-",title:"晉陽侯",tag:"逍遙津",desc:"800破10萬，孫權一生的心理陰影。",poem:"八百壯士衝吳陣，遼來遼去哭孫權。"},
+            {name:"孫策",rank:"A-",title:"小霸王",tag:"江東奠基",desc:"席捲江東，性格輕率死於刺客，潛力未兌現。",poem:"獨騎江東掃六郡，英氣傑出似霸王。"},
+            {name:"廉頗",rank:"A-",title:"信平君",tag:"尚能飯否",desc:"戰國鐵壁，晚年流亡，趙國的遺憾。",poem:"一飯斗米肉十斤，誰知客死在大梁。"},
+            {name:"周亞夫",rank:"A-",title:"條侯",tag:"細柳營",desc:"平定七國之亂，治軍森嚴，死於剛直。",poem:"亞夫營中真將軍，絕食獄底漢家臣。"},
+            {name:"蒙恬",rank:"A-",title:"內史",tag:"北疆長城",desc:"卻匈奴，築長城，死於政治陰謀。",poem:"卻客七百里胡馬，冤死沙丘恨未平。"},
+            {name:"韓世忠",rank:"A-",title:"蘄王",tag:"黃天蕩",desc:"困住金兀朮48天，南宋中興武將。",poem:"八千死士困兀朮，騎驢西湖老將軍。"},
+            {name:"李宗仁",rank:"A-",title:"代總統",tag:"台兒莊",desc:"抗戰首勝，桂系魁首，政治軍事複合體。",poem:"徐州城下驚天地，台兒莊邊破日軍。"},
+            {name:"魏延",rank:"A-",title:"漢中太守",tag:"子午谷",desc:"漢中屏障，反骨猛將，死於內鬥。",poem:"子午谷中奇謀在，漢中城頭將星孤。"},
+            {name:"張靈甫",rank:"A-",title:"鐵軍軍長",tag:"孟良崮",desc:"御林軍74師，戰術硬朗，死於愚忠。",poem:"萬家嶺上跛腿將，孟良崮頭斷腸魂。"},
+            {name:"韓擒虎",rank:"A-",title:"上柱國",tag:"擒龍先鋒",desc:"500人渡江滅陳，隋朝快刀。",poem:"五百精騎渡大江，井中活捉陳後主。"},
+            // B+ (17)
+            {name:"李克用",rank:"B+",title:"晉王",tag:"獨眼龍",desc:"沙陀飛虎，晚唐戰力天花板，政治低能。",poem:"鴉軍黑甲掃黃巢，獨眼龍威震河東。"},
+            {name:"封常清",rank:"B+",title:"西域副都護",tag:"潼關冤魂",desc:"安史之亂救火隊長，含冤而死。",poem:"自古名將如美人，不許人間見白頭。"},
+            {name:"劉錡",rank:"B+",title:"太尉",tag:"順昌鐵壁",desc:"鐵浮圖剋星，長斧砍馬腿，南宋中興名將。",poem:"順昌城下鐵浮圖，長斧鐮刀盡斷軀。"},
+            {name:"章邯",rank:"B+",title:"雍王",tag:"刑徒軍魂",desc:"大秦最後支柱，被項羽擊敗的悲劇背景板。",poem:"驪山囚徒以此兵，奈何項王是天神。"},
+            {name:"姜維",rank:"B+",title:"幼麟",tag:"九伐中原",desc:"繼承諸葛遺志，孤臣撐天，悲劇英雄。",poem:"計不成乃天命也，一將獨撐蜀漢天。"},
+            {name:"趙雲",rank:"B+",title:"虎威將軍",tag:"一身是膽",desc:"完美的職業軍人，漢水空營，缺乏大兵團紀錄。",poem:"昔日長坂救幼主，今朝漢水一身膽。"},
+            {name:"皇甫嵩",rank:"B+",title:"車騎將軍",tag:"大漢餘暉",desc:"平定黃巾之亂首功，東漢最後的正規軍統帥。",poem:"平定黃巾第一功，漢室餘暉照洛陽。"},
+            {name:"陸抗",rank:"B+",title:"大司馬",tag:"東吳長城",desc:"陸遜之子，西陵擊敗羊祜，維持最後尊嚴。",poem:"西陵一戰破羊祜，東吳最後護國牆。"},
+            {name:"張郃",rank:"B+",title:"巧變",tag:"五子良將",desc:"街亭敗馬謖，曹魏後期第一名將，死於木門道。",poem:"街亭高處斷馬謖，木門道中矢如雨。"},
+            {name:"馬超",rank:"B+",title:"神威天將軍",tag:"潼關惡戰",desc:"殺得曹操割鬚棄袍，有勇無謀，晚年抑鬱。",poem:"潼關殺得曹瞞懼，神威天將震西涼。"},
+            {name:"李成梁",rank:"B+",title:"遼東王",tag:"養虎為患",desc:"鎮守遼東三十年，扶植努爾哈赤，戰術A戰略D。",poem:"三十年威震遼左，一朝養虎以此噬明。"},
+            {name:"洪承疇",rank:"B+",title:"經略大學士",tag:"開清第一功",desc:"松山兵敗，經略江南，有能力的貳臣。",poem:"松山兵敗降北虜，江南半壁屬洪公。"},
+            {name:"年羹堯",rank:"B+",title:"撫遠大將軍",tag:"恃才傲物",desc:"平定青海，功高震主，死於跋扈。",poem:"平西定藏功雖大，御前箕坐命難留。"},
+            {name:"蔣中正",rank:"B+",title:"委員長",tag:"政治統帥",desc:"戰略A（抗戰到底），戰術C（微操大師）。",poem:"黃埔建軍定中原，越級微操失江山。"},
+            {name:"劉湘",rank:"B+",title:"甫公",tag:"四川王",desc:"抗戰甫公，川軍死戰不退，愛國軍閥。",poem:"敵軍未退誓不還，出師未捷身先死。"},
+            {name:"蔡鍔",rank:"B+",title:"再造共和",tag:"護國軍神",desc:"護國戰爭擊敗袁世凱北洋軍，近代軍魂。",poem:"護國討袁再造日，留得清名在人間。"},
+            {name:"左良玉",rank:"B+",title:"寧南侯",tag:"跋扈軍閥",desc:"擁兵80萬避戰不出，坐看明亡。(從B+降級)",poem:"擁兵八十萬，坐看大明亡。"},
+            // B (10)
+            {name:"史可法",rank:"B",title:"督師",tag:"氣節S+",desc:"揚州十日，道德完人，但軍事指揮能力平庸。",poem:"點點梅花亡國淚，二分明月故臣心。"},
+            {name:"毛文龍",rank:"B",title:"東江鎮",tag:"游擊鼻祖",desc:"開闢敵後戰場牽制後金，被袁崇煥擅殺。",poem:"海外孤懸東江鎮，可惜冤死尚方劍。"},
+            {name:"哥舒翰",rank:"B",title:"潼關敗將",tag:"被迫出戰",desc:"早年威震吐蕃，晚年被迫出潼關戰敗被俘。",poem:"潼關被迫出師去，一世英名付東流。"},
+            {name:"王毛仲",rank:"B",title:"輔國大將軍",tag:"禁軍統領",desc:"唐玄宗親信，雖有擁立之功但軍事平平。",poem:"禁軍擁立功雖大，恃寵而驕禍必隨。"},
+            {name:"秦叔寶",rank:"B",title:"門神",tag:"單挑猛將",desc:"隋唐好漢，勇武過人，後期多病養身。",poem:"雙鐧打遍山東路，凌煙閣上第一流。"},
+            {name:"程知節",rank:"B",title:"盧國公",tag:"福將",desc:"混世魔王，生存智慧極高，長壽善終。",poem:"混世魔王福將名，半生征戰得善終。"},
+            {name:"張仁愿",rank:"B",title:"受降城",tag:"戰略築城",desc:"築三受降城，卻突厥於漠北，防禦戰略家。",poem:"築城漠北卻突厥，不戰而屈人之兵。"},
+            {name:"馮玉祥",rank:"B",title:"倒戈將軍",tag:"基督將軍",desc:"中原大戰關鍵變數，練兵有方但政治投機。",poem:"倒戈將軍變幻旗，中原大戰亂局迷。"},
+            {name:"黃百韜",rank:"B",title:"兵團司令",tag:"碾莊死戰",desc:"雜牌軍打出王牌戰力，淮海戰役力戰殉國。",poem:"碾莊死戰報君恩，雜牌打出王牌魂。"},
+            {name:"种師道",rank:"B",title:"老种經略",tag:"抗金名將",desc:"北宋末年唯一可靠的老將，被朝廷閒置。",poem:"老种經略不可用，北宋長城自毀之。"},
+            // C+ (7)
+            {name:"李自成",rank:"C+",title:"闖王",tag:"入主北京",desc:"推翻明朝，但迅速敗於清軍，缺乏治國能力。",poem:"闖王入京如一夢，九宮山下落斜陽。"},
+            {name:"張獻忠",rank:"C+",title:"八大王",tag:"屠川魔王",desc:"流動作戰能力強，但殘暴嗜殺，無政治建設。",poem:"屠川魔王殺氣重，七殺碑文驚鬼神。"},
+            {name:"石達開",rank:"C+",title:"翼王",tag:"出走天國",desc:"太平天國最強將領，但兵敗大渡河，結局悲劇。",poem:"大渡橋橫鐵索寒，翼王悲劇此中看。"},
+            {name:"楊秀清",rank:"C+",title:"東王",tag:"天國大腦",desc:"軍事指揮出色，但野心膨脹死於內鬥。",poem:"天國大腦籌謀深，禍起蕭墻命歸陰。"},
+            {name:"唐生智",rank:"C+",title:"南京衛戍",tag:"棄城而逃",desc:"誓死守南京，結果率先逃跑，指揮混亂。",poem:"誓死守城先棄遁，金陵城下哭冤魂。"},
+            {name:"李信",rank:"C+",title:"秦將",tag:"輕敵冒進",desc:"誇口20萬滅楚，被項燕大敗，年輕氣盛。",poem:"輕敵冒進誇海口，二十萬軍敗辱身。"},
+            {name:"左良玉",rank:"C+",title:"寧南侯",tag:"跋扈軍閥",desc:"擁兵80萬避戰不出，坐看明亡。(從B+降級)",poem:"擁兵八十萬，坐看大明亡。"},
+            // C (2)
+            {name:"馬謖",rank:"C",title:"參軍",tag:"紙上談兵",desc:"失街亭，導致諸葛亮第一次北伐功敗垂成。",poem:"攻心為上言雖妙，街亭山上紙談兵。"},
+            {name:"馮異",rank:"C",title:"大樹將軍?",tag:"爭議歸類",desc:"註：若指雲台二十八將馮異則為A級；此處應指蜀漢馮習(夷陵之戰)或特定敗戰視角。",poem:"猇亭烈火燒連營，漢軍精銳盡成灰。"},
+            // C- (2)
+            {name:"鄧世昌",rank:"C-",title:"致遠艦長",tag:"甲午忠魂",desc:"撞擊吉野，壯烈殉國，精神S級但戰果有限。",poem:"此日漫揮天下淚，有公足壯海軍威。"},
+            {name:"陳化成",rank:"C-",title:"江南提督",tag:"吳淞血戰",desc:"鴉片戰爭中孤軍抗英，力戰而亡，民族氣節。",poem:"吳淞炮台孤軍戰，化作碧血染海疆。"}
+        ];
+
+        // 應用狀態
+        const appState = {
+            mode: 'browse',
+            warRoom: { minimized: false, activeSlot: null, teams: { red: {}, blue: {} } },
+            soulMode: { minimized: false, activeSlot: null, activeScenario: null, selection: { host: null, soul: null } },
+            chatMode: { target: null, history: [] },
+            chatHistories: JSON.parse(localStorage.getItem('generalChatHistories')) || {},
+            customGenerals: JSON.parse(localStorage.getItem('customGenerals')) || [],
+            modifiedGenerals: JSON.parse(localStorage.getItem('modifiedGenerals')) || {}
+        };
+        
+        let generalsData = [];
+
+        // Safe Initialization
+        try {
+            generalsData = [...staticGeneralsData, ...appState.customGenerals];
+            generalsData = generalsData.map(g => appState.modifiedGenerals[g.name] ? { ...g, ...appState.modifiedGenerals[g.name], isModified: true } : g);
+        } catch (e) {
+            console.error("Data initialization error:", e);
+            generalsData = [...staticGeneralsData]; // Fallback to static data
+        }
+
+        const warRoomSlots = ['commander', 'strategist', 'vanguard', 'defender', 'raider'];
+        ['red', 'blue'].forEach(t => warRoomSlots.forEach(r => appState.warRoom.teams[t][r] = null));
+
+        const scenarios = [
+            { era: "戰國", title: "長平之戰", host: "趙括", crisis: "斷糧46日，四十萬趙軍被白起包圍。", enemy: "白起", id: "sc1" },
+            { era: "秦末", title: "鉅鹿之戰", host: "章邯", crisis: "項羽破釜沉舟而來，諸侯作壁上觀。", enemy: "項羽", id: "sc2" },
+            { era: "楚漢", title: "彭城之戰", host: "劉邦", crisis: "56萬聯軍被項羽3萬騎兵擊潰，妻兒被俘。", enemy: "項羽", id: "sc3" },
+            { era: "三國", title: "白門樓", host: "呂布", crisis: "下邳城破，被曹操大軍圍困，部下叛變。", enemy: "曹操", id: "sc4" },
+            { era: "三國", title: "失街亭", host: "馬謖", crisis: "捨水上山，水源斷絕，被張郃大軍圍困。", enemy: "張郃", id: "sc5" },
+            { era: "三國", title: "五丈原", host: "諸葛亮", crisis: "積勞成疾，生命將盡，魏軍堅守不出。", enemy: "司馬懿", id: "sc6" },
+            { era: "東晉", title: "淝水之戰", host: "苻堅", crisis: "百萬大軍軍心渙散，草木皆兵。", enemy: "謝玄", id: "sc7" },
+            { era: "南北朝", title: "侯景之亂", host: "梁武帝", crisis: "台城被圍，餓死邊緣，宗室觀望不救。", enemy: "侯景", id: "sc8" },
+            { era: "大唐", title: "潼關之戰", host: "哥舒翰", crisis: "皇帝強令出關決戰，面對安祿山精銳。", enemy: "崔乾佑", id: "sc9" },
+            { era: "大唐", title: "馬嵬坡", host: "唐玄宗", crisis: "禁軍嘩變，逼殺楊貴妃，眾叛親離。", enemy: "陳玄禮", id: "sc10" },
+            { era: "北宋", title: "高粱河", host: "宋太宗", crisis: "大敗於遼軍，乘驢車狼狽逃亡。", enemy: "耶律休哥", id: "sc11" },
+            { era: "北宋", title: "靖康之變", host: "宋欽宗", crisis: "金兵圍城，城內無兵可守，求和無門。", enemy: "完顏宗望", id: "sc12" },
+            { era: "南宋", title: "崖山海戰", host: "陸秀夫", crisis: "背海死戰，十萬軍民退無可退。", enemy: "張弘範", id: "sc13" },
+            { era: "元末", title: "鄱陽湖", host: "陳友諒", crisis: "巨艦被火攻，朱元璋扼守出口，糧道斷絕。", enemy: "朱元璋", id: "sc14" },
+            { era: "大明", title: "土木堡之變", host: "明英宗", crisis: "五十萬大軍缺水被圍，全軍覆沒在即。", enemy: "也先", id: "sc15" },
+            { era: "大明", title: "薩爾滸", host: "楊鎬", crisis: "分進合擊被各個擊破，四路大軍崩潰。", enemy: "努爾哈赤", id: "sc16" },
+            { era: "大明", title: "松錦之戰", host: "洪承疇", crisis: "糧道被斷，數萬大軍被圍困於松山孤城。", enemy: "皇太極", id: "sc17" },
+            { era: "大明", title: "煤山之變", host: "崇禎", crisis: "李自成破城，百官逃散，身邊僅一太監。", enemy: "李自成", id: "sc18" },
+            { era: "南明", title: "揚州十日", host: "史可法", crisis: "孤城不可守，清軍紅衣大炮轟城。", enemy: "多鐸", id: "sc19" },
+            { era: "大清", title: "甲午海戰", host: "鄧世昌", crisis: "艦隊被圍攻，彈藥將盡，致遠號重創。", enemy: "伊東祐亨", id: "sc20" }
+        ];
+
+        function generateStats(g) {
+            let base = 50;
+            switch(g.rank) { case "S+": base=98; break; case "S": base=95; break; case "S-": base=92; break; case "A+": base=88; break; case "A": base=85; break; case "A-": base=82; break; case "B+": base=78; break; case "B": base=75; break; case "C+": base=70; break; case "C": base=60; break; case "C-": base=65; break; }
+            let str = base + Math.floor(Math.random()*5-2); // Strategy
+            let tac = base + Math.floor(Math.random()*5-2); // Tactics
+            let lea = base-5 + Math.floor(Math.random()*10); // Leadership (previously 'inn')
+            let pol = base-10 + Math.floor(Math.random()*20); // Politics
+            
+            // Adjust based on keywords
+            if(g.desc.includes("戰略")||g.title.includes("神")||g.title.includes("兵仙")) str+=5;
+            if(g.desc.includes("戰術")||g.title.includes("猛")||g.title.includes("鋒")) tac+=5;
+            if(g.desc.includes("治軍")||g.desc.includes("軍制")||g.desc.includes("練兵")||g.tag.includes("軍魂")||g.tag.includes("岳家軍")) lea+=10;
+            if(g.desc.includes("皇帝")||g.desc.includes("政治")||g.desc.includes("權臣")) pol+=10;
+            if(g.desc.includes("政治低能")||g.desc.includes("冤死")||g.desc.includes("內鬥")||g.tag.includes("悲劇")) pol-=20;
+            
+            const clamp=(n)=>Math.min(100,Math.max(10,n));
+            return [clamp(str),clamp(tac),clamp(lea),clamp(pol)];
+        }
+
+        const el = id => document.getElementById(id);
+
+        function init() {
+            renderGenerals();
+            initSlots();
+            initScenarios();
+            window.onclick = (e) => { 
+                if(e.target == el('aiModal')) closeModal(); 
+                if(e.target == el('addModal')) closeAddModal(); 
+                if(e.target == el('editHubModal')) closeEditHub();
+            }
+        }
+
+        function renderGenerals(filterRank = 'all', searchQuery = '') {
+            const container = el('gridContainer');
+            container.innerHTML = '';
+            const rankOrder = { "S+": 1, "S": 2, "S-": 3, "A+": 4, "A": 5, "A-": 6, "B+": 7, "B": 8, "C+": 9, "C": 10, "C-": 11 };
+            const filtered = generalsData.filter(g => {
+                const matchRank = filterRank === 'all' || g.rank === filterRank;
+                const matchSearch = g.name.includes(searchQuery) || g.title.includes(searchQuery) || g.tag.includes(searchQuery);
+                return matchRank && matchSearch;
+            }).sort((a, b) => rankOrder[a.rank] - rankOrder[b.rank]);
+
+            el('countDisplay').innerText = filtered.length;
+
+            filtered.forEach(g => {
+                let rankClass = 'rank-B';
+                switch(g.rank) {
+                    case 'S+': rankClass = 'rank-S-plus'; break;
+                    case 'S': rankClass = 'rank-S'; break;
+                    case 'S-': rankClass = 'rank-S-minus'; break;
+                    case 'A+': rankClass = 'rank-A-plus'; break;
+                    case 'A': rankClass = 'rank-A'; break;
+                    case 'A-': rankClass = 'rank-A-minus'; break;
+                    case 'B+': rankClass = 'rank-B-plus'; break;
+                    case 'B': rankClass = 'rank-B'; break;
+                    case 'C+': rankClass = 'rank-C-plus'; break;
+                    case 'C': rankClass = 'rank-C'; break;
+                    case 'C-': rankClass = 'rank-C-minus'; break;
+                }
+                
+                let selectionClass = '', label = '';
+                for(const [r, n] of Object.entries(appState.warRoom.teams.red)) if(n === g.name) { selectionClass = 'selected-red'; label = `<span class="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">紅軍</span>`; }
+                for(const [r, n] of Object.entries(appState.warRoom.teams.blue)) if(n === g.name) { selectionClass = 'selected-blue'; label = `<span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">藍軍</span>`; }
+                if(appState.soulMode.selection.host === g.name) { selectionClass = 'selected-host'; label = `<span class="bg-slate-200 text-slate-700 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">宿主</span>`; }
+                if(appState.soulMode.selection.soul === g.name) { selectionClass = 'selected-soul'; label = `<span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">靈魂</span>`; }
+                const isMod = g.isModified ? '<span class="mod-badge">修訂</span>' : '';
+                const isNew = appState.customGenerals.some(cg => cg.name === g.name) ? '<span class="new-badge">新</span>' : '';
+                const sPlusEffect = g.rank === 'S+' ? 'card-s-plus' : '';
+                
+                const card = `
+                <div class="paper-card rounded-xl p-5 relative flex flex-col h-full cursor-pointer ${selectionClass} ${sPlusEffect}" onclick="handleCardClick('${g.name}')">
+                    ${isMod || isNew}
+                    <div class="flex justify-between items-start mb-3 relative z-10">
+                        <div class="flex-1"><h3 class="text-xl font-bold text-[#2c2826] tracking-tight flex items-center flex-wrap gap-1">${g.name} ${label}</h3><p class="text-xs text-[#78716c] font-serif font-medium mt-1">${g.title}</p></div>
+                        <span class="rank-badge ${rankClass} shadow-sm shrink-0 ml-2">${g.rank}</span>
+                    </div>
+                    <div class="mb-3 relative z-10"><span class="inline-flex items-center gap-1 bg-[#f5f5f4] text-[#57534e] text-[10px] font-bold px-2 py-0.5 rounded border border-[#e5e0d3]"><i class="fa-solid fa-tag text-[#d4af37] text-[9px]"></i>${g.tag}</span></div>
+                    <div class="relative py-2 my-2 bg-[#f9f7f1] rounded px-3 border-l-2 border-[#d4af37] shadow-sm z-10"><p class="text-lg text-[#44403c] italic poem-font leading-relaxed tracking-wide text-center">"${g.poem || '鐵馬冰河入夢來'}"</p></div>
+                    <p class="text-xs text-[#57534e] leading-relaxed pt-3 border-t border-[#e5e0d3] mb-4 flex-grow font-serif z-10">${g.desc}</p>
+                    <div class="flex gap-2 mt-auto pt-1 relative z-10" onclick="event.stopPropagation()">
+                        <button onclick="startChat('${g.name}')" class="flex-1 bg-white hover:bg-[#f5f5f4] text-[#57534e] text-xs font-serif font-bold py-2 rounded border border-[#e5e0d3] transition-colors"><i class="fa-solid fa-comment-dots text-[#a8a29e] mr-1"></i>對話</button>
+                        <button onclick="showAIAnalysis('${g.name}', '${g.rank}', '${g.title}')" class="flex-1 btn-ink text-xs font-bold py-2 rounded transition-colors group"><i class="fa-solid fa-scroll text-[#d4af37] mr-1"></i>評鑑</button>
+                    </div>
+                </div>`;
+                container.innerHTML += card;
+            });
+        }
+
+        function initSlots() {
+            const roleLabels = { commander: '元帥', strategist: '軍師', vanguard: '先鋒', defender: '鐵壁', raider: '遊擊' };
+            const roleIcons = { commander: 'crown', strategist: 'brain', vanguard: 'horse-head', defender: 'shield-halved', raider: 'bolt' };
+            ['red', 'blue'].forEach(team => {
+                const container = el(`${team}-slots-container`);
+                const color = team === 'red' ? 'red' : 'blue';
+                let html = '';
+                warRoomSlots.forEach(role => {
+                    const colSpan = role === 'raider' ? 'col-span-2' : '';
+                    html += `
+                        <div onclick="selectWarRoomSlot('${team}', '${role}')" id="slot-${team}-${role}" class="role-slot rounded p-2 flex items-center gap-3 cursor-pointer border-dashed border-[#a8a29e] bg-white bg-opacity-60 ${colSpan}">
+                            <div class="w-8 h-8 rounded-full bg-${color}-50 text-${color}-600 flex items-center justify-center font-bold text-sm border border-${color}-100"><i class="fa-solid fa-${roleIcons[role]}"></i></div>
+                            <div class="flex-1 min-w-0"><p class="text-[10px] font-bold text-${color}-800 uppercase tracking-widest">${roleLabels[role]}</p><p class="text-xs font-bold text-[#78716c] truncate slot-name font-serif">虛位以待</p></div>
+                        </div>`;
+                });
+                container.innerHTML = html;
+            });
+        }
+
+        function initScenarios() {
+            const container = el('scenarioContent');
+            let html = '';
+            scenarios.forEach(s => {
+                html += `
+                    <div onclick="startScenario('${s.id}')" class="min-w-[240px] bg-[#fffdf9] rounded-xl border border-[#fda4af] p-5 cursor-pointer hover:border-[#be123c] hover:shadow-lg transition-all group flex flex-col justify-between relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-[#be123c] opacity-5 rounded-bl-full pointer-events-none"></div>
+                        <div>
+                            <span class="text-[10px] font-bold bg-[#ffe4e6] text-[#9f1239] px-2 py-0.5 rounded border border-[#fecdd3]">${s.era}</span>
+                            <h4 class="font-bold text-[#881337] mt-2 text-lg font-serif group-hover:text-[#be123c]">${s.title}</h4>
+                            <div class="text-xs text-[#57534e] mt-1 mb-2 font-serif"><i class="fa-solid fa-user-injured mr-1 text-[#fda4af]"></i>宿主: ${s.host}</div>
+                            <p class="text-[11px] text-[#44403c] leading-relaxed border-t border-[#fecdd3] pt-2 font-serif italic opacity-80">"${s.crisis}"</p>
+                        </div>
+                        <div class="mt-3 text-xs font-bold text-[#be123c] flex items-center gap-1 group-hover:translate-x-1 transition-transform uppercase tracking-wider">挑戰 ${s.enemy} <i class="fa-solid fa-arrow-right"></i></div>
+                    </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // --- Edit Hub ---
+        function openEditHub() {
+            el('editHubModal').classList.remove('hidden');
+            el('editSearchInput').value = '';
+            el('editFormSection').classList.add('hidden');
+            el('editSearchInput').focus();
+            const datalist = el('generalsList');
+            datalist.innerHTML = generalsData.map(g => `<option value="${g.name}">`).join('');
+        }
+        function closeEditHub() { el('editHubModal').classList.add('hidden'); }
+        let currentEditingName = null;
+        function loadGeneralForEdit() {
+            const name = el('editSearchInput').value.trim();
+            if(!name) return;
+            const g = generalsData.find(x => x.name === name);
+            if (!g) { alert(`找不到名將「${name}」。請確認輸入正確，或使用「招募」功能新增。`); return; }
+            currentEditingName = name;
+            
+            // Show/Hide Delete Button based on if it is a custom general
+            const isCustom = appState.customGenerals.some(cg => cg.name === name);
+            if(isCustom) el('deleteGeneralBtn').classList.remove('hidden');
+            else el('deleteGeneralBtn').classList.add('hidden');
+
+            el('editRank').value = g.rank; el('editTitle').value = g.title; el('editTag').value = g.tag; el('editPoem').value = g.poem; el('editDesc').value = g.desc;
+            el('editFormSection').classList.remove('hidden');
+        }
+        function saveGeneralEdits() {
+            const name = currentEditingName;
+            const newData = { rank: el('editRank').value, title: el('editTitle').value, tag: el('editTag').value, poem: el('editPoem').value, desc: el('editDesc').value };
+            appState.modifiedGenerals[name] = newData;
+            localStorage.setItem('modifiedGenerals', JSON.stringify(appState.modifiedGenerals));
+            const idx = generalsData.findIndex(x => x.name === name);
+            if (idx !== -1) generalsData[idx] = { ...generalsData[idx], ...newData, isModified: true };
+            alert(`「${name}」的資料已修訂成功！`);
+            closeEditHub(); renderGenerals();
+        }
+        function deleteCustomGeneral() {
+            const name = currentEditingName;
+            if(!confirm(`確定要將「${name}」從名將錄中除名嗎？此操作不可逆。`)) return;
+            
+            appState.customGenerals = appState.customGenerals.filter(g => g.name !== name);
+            localStorage.setItem('customGenerals', JSON.stringify(appState.customGenerals));
+            
+            // Remove from modified if exists
+            if(appState.modifiedGenerals[name]) {
+                delete appState.modifiedGenerals[name];
+                localStorage.setItem('modifiedGenerals', JSON.stringify(appState.modifiedGenerals));
+            }
+            
+            // Rebuild main data
+            // Safe Initialization in case of deletion
+            try {
+                generalsData = [...staticGeneralsData, ...appState.customGenerals];
+                generalsData = generalsData.map(g => appState.modifiedGenerals[g.name] ? { ...g, ...appState.modifiedGenerals[g.name], isModified: true } : g);
+            } catch (e) {
+                console.error("Error rebuilding data:", e);
+                generalsData = [...staticGeneralsData];
+            }
+            
+            alert(`「${name}」已除名。`);
+            closeEditHub(); renderGenerals();
+        }
+
+        async function askAIConsultant() {
+            const input = el('consultInput').value; if(!input) return;
+            el('consultResult').classList.remove('hidden'); el('consultResult').innerText = "AI 正在查閱史料...";
+            const g = generalsData.find(x => x.name === currentEditingName);
+            const prompt = `使用者想修訂名將「${g.name}」(${g.rank})。理由：${input}。
+            請以嚴謹歷史學家角度，並基於【戰略、戰術、統御、政治】四維體系分析合理性，並提供史料依據(50字內)。`;
+            try { const text = await callGemini(prompt); el('consultResult').innerText = text; } 
+            catch(e) { el('consultResult').innerText = "AI 連線失敗"; }
+        }
+
+        // --- Logic Control ---
+        function toggleMode(modeName) {
+            if (appState.mode === 'soulMode' && appState.soulMode.activeScenario) {
+                appState.soulMode.activeScenario = null;
+                el('hostNameDisplay').innerText = "選擇宿主...";
+                el('hostNameDisplay').classList.add('text-indigo-900'); el('hostNameDisplay').classList.remove('text-red-600');
+            }
+            if (appState.mode !== 'browse' && appState.mode !== modeName) closeAllPanels();
+            const panelId = modeName === 'warRoom' ? 'warRoomPanel' : (modeName === 'soulMode' ? 'soulModePanel' : 'scenarioModePanel');
+            const panel = el(panelId);
+            if (!panel.classList.contains('translate-y-full')) { closeAllPanels(); } 
+            else {
+                appState.mode = modeName;
+                panel.classList.remove('translate-y-full');
+                const tip = el('selectionModeTip');
+                if(tip && modeName !== 'scenarioMode') { tip.classList.remove('hidden'); el('tipText').innerText = modeName === 'warRoom' ? '點擊下方職位，再點擊上方名將加入編制' : '選擇【肉身】與【靈魂】進行模擬'; el('statsContainer').classList.add('hidden'); }
+                document.body.style.paddingBottom = '380px';
+            }
+        }
+        function closeAllPanels() {
+            appState.mode = 'browse';
+            appState.warRoom.activeSlot = null;
+            appState.soulMode.activeSlot = null;
+            appState.soulMode.activeScenario = null;
+            el('hostNameDisplay').innerText = "選擇宿主...";
+            el('hostNameDisplay').classList.add('text-indigo-900'); el('hostNameDisplay').classList.remove('text-red-600');
+            document.querySelectorAll('.bottom-panel').forEach(el => el.classList.add('translate-y-full'));
+            el('selectionModeTip').classList.add('hidden');
+            el('statsContainer').classList.remove('hidden');
+            document.body.style.paddingBottom = '0px';
+            maximizePanel('warRoom'); maximizePanel('soulMode');
+            updateAllUI();
+        }
+        function togglePanelSize(mode) {
+            const state = mode === 'warRoom' ? appState.warRoom : appState.soulMode;
+            state.minimized = !state.minimized;
+            const panel = el(mode === 'warRoom' ? 'warRoomPanel' : 'soulModePanel');
+            const content = el(mode === 'warRoom' ? 'warRoomContent' : 'soulModeContent');
+            const status = el(mode === 'warRoom' ? 'warRoomStatus' : 'soulModeStatus');
+            const height = mode === 'warRoom' ? '360px' : '300px';
+            if (state.minimized) { panel.style.height = '56px'; content.classList.add('hidden'); status.classList.remove('hidden'); document.body.style.paddingBottom = '70px'; updateStatusText(mode); } 
+            else { panel.style.height = height; content.classList.remove('hidden'); status.classList.add('hidden'); document.body.style.paddingBottom = parseInt(height) + 20 + 'px'; }
+        }
+        function maximizePanel(mode) { if((mode === 'warRoom' ? appState.warRoom : appState.soulMode).minimized) togglePanelSize(mode); }
+        function minimizePanel(mode) { if(!(mode === 'warRoom' ? appState.warRoom : appState.soulMode).minimized) togglePanelSize(mode); }
+        function updateStatusText(mode) {
+            const elements = document.querySelectorAll('.selecting-role-text');
+            let text = "暫無選擇";
+            if (mode === 'warRoom' && appState.warRoom.activeSlot) {
+                const {team, role} = appState.warRoom.activeSlot;
+                const map = { commander: '元帥', strategist: '軍師', vanguard: '先鋒', defender: '鐵壁', raider: '遊擊' };
+                text = `${team==='red'?'紅軍':'藍軍'} · ${map[role]}`;
+            } else if (mode === 'soulMode' && appState.soulMode.activeSlot) { text = appState.soulMode.activeSlot === 'host' ? '肉身 (Host)' : '靈魂 (Soul)'; }
+            elements.forEach(e => e.innerText = text);
+        }
+        function selectWarRoomSlot(team, role) { appState.warRoom.activeSlot = { team, role }; if (appState.warRoom.teams[team][role]) appState.warRoom.teams[team][role] = null; minimizePanel('warRoom'); updateAllUI(); }
+        function selectSoulSlot(slot) {
+            if (slot === 'host' && appState.soulMode.activeScenario) {
+                if(!confirm("退出當前絕境劇本？")) return;
+                appState.soulMode.activeScenario = null;
+                el('hostNameDisplay').innerText = "選擇宿主...";
+                el('hostNameDisplay').classList.add('text-indigo-900'); el('hostNameDisplay').classList.remove('text-red-600');
+            }
+            appState.soulMode.activeSlot = slot; 
+            if (appState.soulMode.selection[slot]) appState.soulMode.selection[slot] = null; 
+            minimizePanel('soulMode'); updateAllUI(); 
+        }
+        function handleCardClick(name) {
+            if (appState.mode === 'browse') { const g = generalsData.find(g => g.name === name); showAIAnalysis(g.name, g.rank, g.title); return; }
+            if (appState.mode === 'warRoom' && appState.warRoom.activeSlot) {
+                const {team, role} = appState.warRoom.activeSlot;
+                let exists = false;
+                Object.values(appState.warRoom.teams.red).forEach(n => n===name ? exists=true:0);
+                Object.values(appState.warRoom.teams.blue).forEach(n => n===name ? exists=true:0);
+                if(exists) { alert('該名將已在編制中'); return; }
+                appState.warRoom.teams[team][role] = name;
+                maximizePanel('warRoom');
+                appState.warRoom.activeSlot = null;
+                updateAllUI();
+            }
+            if (appState.mode === 'soulMode' && appState.soulMode.activeSlot) {
+                const slot = appState.soulMode.activeSlot;
+                if (appState.soulMode.activeScenario && slot === 'host') { alert("劇本模式下無法更換宿主！請點擊重置按鈕。"); return; }
+                appState.soulMode.selection[slot] = name;
+                maximizePanel('soulMode');
+                appState.soulMode.activeSlot = null;
+                updateAllUI();
+            }
+        }
+        function updateAllUI() {
+            renderGenerals();
+            updateWarRoomUI();
+            updateSoulModeUI();
+            if(appState.mode !== 'browse' && appState.mode !== 'scenarioMode') updateStatusText(appState.mode);
+        }
+        function updateWarRoomUI() {
+            let redC = 0, blueC = 0;
+            let activeAffinities = [];
+            const allSelected = [...Object.values(appState.warRoom.teams.red), ...Object.values(appState.warRoom.teams.blue)].filter(Boolean);
+            const bar = el('affinityBar');
+            if(activeAffinities.length > 0) { bar.classList.remove('hidden'); bar.classList.add('flex'); bar.innerHTML = activeAffinities.map(a => `<span class="affinity-badge inline-flex items-center gap-1 bg-[#1c1917] text-[#f5f5f4] text-[10px] font-bold px-2 py-0.5 rounded border border-[#d4af37] shadow-sm font-serif tracking-wider"><i class="fa-solid fa-link text-[#d4af37]"></i> ${a.title}</span>`).join(''); } 
+            else { bar.classList.add('hidden'); bar.classList.remove('flex'); }
+            ['red', 'blue'].forEach(team => {
+                warRoomSlots.forEach(role => {
+                    const elem = el(`slot-${team}-${role}`);
+                    const name = appState.warRoom.teams[team][role];
+                    const isActive = appState.warRoom.activeSlot && appState.warRoom.activeSlot.team === team && appState.warRoom.activeSlot.role === role;
+                    const nameEl = elem.querySelector('.slot-name');
+                    elem.classList.remove('bg-red-50', 'bg-blue-50', 'border-red-200', 'border-blue-200', 'border-dashed', 'active-selection', 'war-mode');
+                    elem.classList.add('border');
+                    if (isActive) { elem.classList.add('active-selection', 'war-mode'); nameEl.innerText = "請點將..."; nameEl.classList.add('text-[#d4af37]'); } 
+                    else if (name) { elem.classList.add(team==='red'?'bg-red-50':'bg-blue-50', team==='red'?'border-red-200':'border-blue-200'); nameEl.innerText = name; nameEl.classList.remove('text-slate-400'); nameEl.classList.add(team==='red'?'text-red-800':'text-blue-800'); if(team==='red') redC++; else blueC++; } 
+                    else { elem.classList.add('border-dashed', 'border-[#a8a29e]'); nameEl.innerText = "虛位以待"; nameEl.classList.add('text-[#a8a29e]'); }
+                });
+            });
+            el('redPower').innerText = `${redC}/5`;
+            el('bluePower').innerText = `${blueC}/5`;
+            const btn = el('startBattleBtn');
+            const ready = appState.warRoom.teams.red.commander && appState.warRoom.teams.blue.commander;
+            btn.disabled = !ready;
+            if(ready) btn.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed'); else btn.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
+        }
+        function updateSoulModeUI() {
+            ['host', 'soul'].forEach(slot => {
+                const elem = el(`slot-soul-${slot}`);
+                const name = appState.soulMode.selection[slot];
+                const isActive = appState.soulMode.activeSlot === slot;
+                const nameEl = elem.querySelector('.slot-name');
+                elem.classList.remove('active-selection', 'soul-mode', 'border-slate-400', 'border-purple-400', 'bg-opacity-50');
+                if (isActive) { elem.classList.add('active-selection', 'soul-mode'); nameEl.innerText = "請點擊上方名將..."; } 
+                else if (name) { nameEl.innerText = name; elem.classList.add('filled', 'border-solid'); nameEl.classList.add('text-[#3b0764]'); } 
+                else { nameEl.innerText = slot==='host'?"選擇宿主...":"選擇穿越者..."; }
+            });
+            const btn = el('startSoulBtn');
+            const ready = appState.soulMode.selection.host && appState.soulMode.selection.soul;
+            btn.disabled = !ready;
+            if(ready) btn.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed'); else btn.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
+        }
+        function clearTeams() { ['red','blue'].forEach(t=> warRoomSlots.forEach(r=> appState.warRoom.teams[t][r] = null)); appState.warRoom.activeSlot = null; updateAllUI(); }
+        function clearSoulSlots() { 
+            appState.soulMode.selection = { host: null, soul: null }; 
+            appState.soulMode.activeSlot = null; 
+            appState.soulMode.activeScenario = null; 
+            el('hostNameDisplay').innerText = "選擇宿主...";
+            el('hostNameDisplay').classList.add('text-indigo-900'); el('hostNameDisplay').classList.remove('text-red-600');
+            updateAllUI(); 
+        }
+        function resetApp() { closeAllPanels(); clearTeams(); clearSoulSlots(); renderGenerals(); }
+
+        // --- AI ---
+        async function callGemini(prompt, isChat = false, isJson = false) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const config = { temperature: isChat ? 0.9 : 0.7 };
+            if (isJson) config.responseMimeType = "application/json";
+            
+            const data = { contents: [{ parts: [{ text: prompt }] }], generationConfig: config };
+            
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            
+            for (let i = 0; i <= delays.length; i++) {
+                try {
+                    const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+                    
+                    if (res.status === 429 && i < delays.length) {
+                        console.warn(`Rate limit hit. Retrying in ${delays[i]}ms...`);
+                        await new Promise(r => setTimeout(r, delays[i]));
+                        continue;
+                    }
+                    
+                    const json = await res.json();
+                    if (!res.ok) throw new Error(json.error?.message || "API Error");
+                    return json.candidates?.[0]?.content?.parts?.[0]?.text || "AI 忙碌中";
+                } catch(e) {
+                    if (i === delays.length) {
+                        console.error("Max retries reached", e);
+                        throw e; 
+                    }
+                     console.warn(`Network error. Retrying in ${delays[i]}ms...`, e);
+                    await new Promise(r => setTimeout(r, delays[i]));
+                }
+            }
+        }
+
+        async function showAIAnalysis(name, rank, title) {
+            currentEditingName = name;
+            const g = generalsData.find(x => x.name === name);
+            if (!g) return;
+            const stats = generateStats(g); 
+            
+            // 1. Open Modal First to show Loading
+            openModal(name, 'content');
+            
+            // 2. Render Chart
+            try {
+                renderRadarChart([{ label: name, data: stats, borderColor: '#d4af37', backgroundColor: 'rgba(212, 175, 55, 0.2)', pointBackgroundColor: '#2c0b0e' }]);
+            } catch(e) { console.warn("Chart render failed", e); }
+            
+            // 3. Call AI - Academic Persona (Four Dimensions)
+            const prompt = `請以嚴謹的軍事歷史學家視角，深度剖析「${name} (${title}, ${rank})」。
+            
+            請務必包含以下「名將四維」分析模組：
+            1. **【戰略 (Strategic Vision)】**：評估其大局觀、戰爭目的之達成率、以及地緣戰略規劃（例如：是否懂得不戰而屈人之兵？）。
+            2. **【戰術 (Tactical Command)】**：評估其臨場指揮、兵種協同能力、以及在劣勢下的應變能力（例如：背水一戰、奇襲）。
+            3. **【統御 (Leadership & Administration)】**：評估其治軍嚴明程度、軍隊紀律、後勤動員能力以及士氣維繫（例如：岳家軍的凍死不拆屋）。
+            4. **【政治 (Political Acumen)】**：評估其在朝堂上的生存智慧、與君主的關係處理、以及戰後的政治影響力。
+            
+            最後，請總結其歷史定位與主要爭議。請保持語氣專業、客觀，避免使用現代流行語或跨領域比喻。繁體中文輸出。`;
+            try {
+                const text = await callGemini(prompt);
+                setModalContent(text);
+            } catch(e) {
+                setModalContent(`### ⚠️ 分析失敗\n\n無法連接到歷史資料庫。請確認您已設定正確的 API 金鑰。\n\n錯誤訊息：${e.message}`);
+            }
+        }
+
+        function startChat(name) {
+            const g = generalsData.find(g => g.name === name);
+            appState.chatMode.target = g;
+            if (!appState.chatHistories[name]) { appState.chatHistories[name] = [{ role: 'ai', text: `吾乃${name}。${g.poem} 閣下有何指教？` }]; saveHistory(); }
+            openModal(`${name}（${g.title}）`, 'chat');
+            renderChatHistory(name);
+        }
+
+        function renderChatHistory(name) {
+            const historyDiv = el('chatHistory');
+            const history = appState.chatHistories[name];
+            let html = '';
+            history.forEach(msg => {
+                const roleClass = msg.role === 'ai' ? 'chat-ai' : 'chat-user';
+                const nameLabel = msg.role === 'ai' ? name : '你';
+                html += `<div class="chat-bubble ${roleClass}">${msg.role === 'ai' ? `<strong>${nameLabel}</strong><br>` : ''}${marked.parse(msg.text)}</div>`;
+            });
+            historyDiv.innerHTML = html;
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+            el('clearMemoryBtn').classList.remove('hidden');
+        }
+
+        async function sendChatMessage() {
+            const input = el('chatInput');
+            const msg = input.value.trim();
+            if(!msg) return;
+            
+            // Disable UI
+            input.disabled = true;
+            const btn = document.querySelector('#chatContainer button');
+            if(btn) btn.disabled = true;
+
+            const g = appState.chatMode.target;
+            const history = appState.chatHistories[g.name];
+
+            history.push({ role: 'user', text: msg });
+            saveHistory(); renderChatHistory(g.name); 
+            
+            const historyDiv = el('chatHistory');
+            const typingId = 'typing-' + Date.now();
+            historyDiv.innerHTML += `<div id="${typingId}" class="chat-bubble chat-ai"><i class="fa-solid fa-ellipsis fa-fade"></i></div>`;
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+
+            const contextMsg = history.slice(-6).map(h => `${h.role==='user'?'提問者':g.name}: ${h.text}`).join('\n');
+            const prompt = `角色扮演：你是歷史名將「${g.name}」(${g.rank})。
+            
+            背景設定：
+            生平：${g.desc}
+            性格特質：${g.tag}
+            代表判詞：${g.poem}
+
+            對話歷史：
+            ${contextMsg}
+
+            最新提問：${msg}
+
+            指令：
+            1. 請完全沉浸於${g.name}的歷史人格與所處朝代的語境中。
+            2. 使用第一人稱，語氣需符合其歷史地位與性格（例如曹操豪邁多疑、諸葛亮謹慎忠誠）。
+            3. 若涉及軍事或政治觀點，請給出符合當時局勢的見解。
+            4. 嚴禁跳脫角色，嚴禁使用現代網絡用語或英語（除非你是近代人物）。
+            
+            請回答：`;
+            
+            try {
+                const text = await callGemini(prompt, true);
+                if(document.getElementById(typingId)) document.getElementById(typingId).remove();
+                history.push({ role: 'ai', text: text });
+                saveHistory(); renderChatHistory(g.name);
+            } catch (e) {
+                if(document.getElementById(typingId)) document.getElementById(typingId).remove();
+                alert(`傳書失敗：${e.message}`);
+            } finally {
+                input.value = '';
+                input.disabled = false;
+                if(btn) btn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function saveHistory() { localStorage.setItem('generalChatHistories', JSON.stringify(appState.chatHistories)); }
+        function clearCurrentMemory() {
+            const g = appState.chatMode.target;
+            if(!g) return;
+            if(confirm(`確定要清除與 ${g.name} 的所有記憶嗎？`)) { delete appState.chatHistories[g.name]; saveHistory(); startChat(g.name); }
+        }
+
+        // --- Add General ---
+        function openAddModal() { el('addModal').classList.remove('hidden'); el('addStep1').classList.remove('hidden'); el('addStep2').classList.add('hidden'); el('addInputName').value = ''; }
+        function closeAddModal() { el('addModal').classList.add('hidden'); }
+        async function analyzeNewGeneral() {
+            const name = el('addInputName').value.trim();
+            if(!name) return;
+            el('addStep1').classList.add('hidden'); el('addLoading').classList.remove('hidden'); el('addLoading').classList.add('flex');
+            
+            // v12.9 Upgrade: Dynamic Tier-based Comparison Logic
+            const prompt = `分析歷史人物「${name}」。請扮演嚴謹的歷史評鑑委員會，執行以下【三階段評級程序】：
+
+            **第一階段：四維初步定位**
+            基於史實評估：
+            1. **戰略 (Strategy)**：大局觀與地緣規劃。
+            2. **戰術 (Tactics)**：臨場指揮與戰場應變。
+            3. **統御 (Leadership)**：帶兵紀律與軍魂凝聚。
+            4. **政治 (Politics)**：朝堂生存與局勢平衡。
+            請根據四維總分，初步判定其所屬層級（S/A/B/C）。
+
+            **第二階段：縱橫向動態比對 (關鍵步驟)**
+            將「${name}」放入對應層級的座標系中，與該層級的標竿人物進行殘酷比對。若不如，則降級；若超越，則升級。
+            
+            *參考標竿：*
+            - **S+ (神話)**：成吉思汗、韓信（改變歷史進程，幾乎無解）。
+            - **S (帝國支柱)**：李靖、衛青（完美統帥，無明顯短板）。
+            - **S- (梟雄/悲劇)**：項羽、曹操（能力頂天但有戰略/性格致命傷）。
+            - **A+ (名將之冠)**：岳飛、徐達（戰功赫赫，幾近S級）。
+            - **A (國之棟樑)**：袁崇煥、周瑜（一方屏障）。
+            - **B+ (強者)**：張郃、馬超（勇冠三軍但缺乏戰略或政治）。
+            - **B (良將)**：史可法、秦叔寶（有節氣或勇力，但綜合能力有限）。
+            - **C (敗軍/平庸)**：李自成（流寇無治國）、馬謖（紙上談兵）。
+
+            *思考邏輯範例：*
+            "若初評為S，請問他比李靖強嗎？若無，是否比項羽（S-）更全面？如果政治太差，是否該降至A+甚至A-？"
+
+            **第三階段：最終定案**
+            Format (JSON Only, 嚴禁Markdown): 
+            {
+                "name": "${name}", 
+                "rank": "評級(S+/S/S-/A+/A/A-/B+/B/C+/C/C-)", 
+                "title": "最具代表性的4字稱號", 
+                "tag": "4字核心特質", 
+                "desc": "簡評(150字內)：必須包含【四維評分】（如：戰略S 戰術A+...），並明確寫出『經比對，其[某能力]優於[某標竿]，但[某缺陷]使其不及[某標竿]，故定為...』的完整邏輯。", 
+                "poem": "七言判詞"
+            }`;
+            
+            try {
+                // FORCE JSON MODE
+                const text = await callGemini(prompt, false, true);
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const data = JSON.parse(jsonMatch[0]);
+                    el('newRank').value = data.rank; el('newTitle').value = data.title; el('newTag').value = data.tag; el('newDesc').value = data.desc; el('newPoem').value = data.poem;
+                    el('addLoading').classList.add('hidden'); el('addLoading').classList.remove('flex'); el('addStep2').classList.remove('hidden');
+                } else throw new Error("JSON Parse Error");
+            } catch (e) { 
+                alert(`AI 分析失敗: ${e.message}`); 
+                el('addLoading').classList.add('hidden'); el('addLoading').classList.remove('flex'); el('addStep1').classList.remove('hidden'); 
+            }
+        }
+        function saveNewGeneral() {
+            const name = el('addInputName').value.trim();
+            const newData = { name: name, rank: el('newRank').value, title: el('newTitle').value, tag: el('newTag').value, desc: el('newDesc').value, poem: el('newPoem').value };
+            appState.customGenerals.push(newData); localStorage.setItem('customGenerals', JSON.stringify(appState.customGenerals)); generalsData.push(newData);
+            closeAddModal(); renderGenerals(); alert(`${name} 已加入！`);
+        }
+
+        // --- Battle & Soul Simulation ---
+        async function startTeamBattle() {
+            openModal(`跨時空軍團會戰`, 'content');
+            const red = appState.warRoom.teams.red;
+            const blue = appState.warRoom.teams.blue;
+            const buildStr = (t) => Object.entries(t).map(([r,n]) => n ? `${r}: ${n}` : '').filter(Boolean).join('\n');
+            const prompt = `史詩級軍團會戰模擬 (v12.5)。
+            
+            【紅軍配置】
+            ${buildStr(red)}
+            
+            【藍軍配置】
+            ${buildStr(blue)}
+            
+            戰場設定：隨機選定一個具有歷史意義的戰略要衝（如潼關、淮河、漢中）。
+            兵力設定：雙方各配備10萬符合其時代特徵的精銳部隊。
+
+            請採用「名將四維分析法」進行嚴謹推演：
+            1. **戰前對比 (四維總覽)**：
+               - **【戰略 (Strategy)】**：雙方主帥的大局觀對比，誰能佔據主動？
+               - **【統御 (Leadership)】**：軍隊士氣、紀律與後勤的韌性對比。
+            2. **戰術博弈 (Tactics)**：推演雙方前鋒與軍師在臨場指揮上的交鋒。兵種如何協同？地形如何利用？
+            3. **關鍵變數 (Politics/Personality)**：考量【政治】因素（如內部團結度、君臣信任）或將領性格缺陷（如衝動、多疑）如何影響戰局轉折。
+            4. **戰後復盤**：給出基於四維綜合評分的最終結局，並評選 MVP。
+
+            規範：嚴禁使用體育、商業或跨領域比喻。保持軍事學術語氣。繁體中文。`;
+            el('radarChartContainer').classList.add('hidden');
+            try {
+                const text = await callGemini(prompt);
+                setModalContent(text);
+            } catch(e) { setModalContent(`推演失敗: ${e.message}`); }
+        }
+
+        function startScenario(id) {
+            const s = scenarios.find(x => x.id === id);
+            toggleMode('soulMode');
+            appState.soulMode.activeScenario = s; // Set scenario state
+            appState.soulMode.selection.host = s.host;
+            el('hostNameDisplay').innerText = s.host;
+            el('hostNameDisplay').classList.remove('text-indigo-900');
+            el('hostNameDisplay').classList.add('text-red-600'); // Red for danger
+            selectSoulSlot('soul');
+        }
+
+        async function handleSoulAction() {
+            try {
+                if (appState.soulMode.activeScenario) {
+                    const s = appState.soulMode.activeScenario;
+                    const { soul } = appState.soulMode.selection;
+                    openModal(`絕境挑戰：${soul} ⭢ ${s.title}`, 'content');
+                    el('radarChartContainer').classList.add('hidden');
+                    const prompt = `絕境挑戰劇本【${s.title}】：
+                    背景危機：${s.crisis}
+                    原宿主：${s.host}
+                    主要對手：${s.enemy}
+                    挑戰者(靈魂)：${soul}
+
+                    請利用「名將四維」進行深度歷史模擬：
+                    假設【${soul}】的意識完全接管了戰場指揮權，但他必須繼承原宿主當下的殘局。
+                    
+                    請推演：
+                    1. **【戰略/統御】重整**：挑戰者會如何重新審視當前的戰略死局？他是否有能力重整崩潰的軍隊（統御力）？
+                    2. **【戰術】破局**：詳細描述挑戰者可能採取的具體戰術行動。他能否利用對手（${s.enemy}）的心理盲點？
+                    3. **【政治】隱憂與結局**：即使戰場獲勝，挑戰者的【政治】手腕能否處理戰後的朝堂反噬？結局是逆天改命成功，還是依然無法挽回？
+
+                    規範：嚴禁使用比喻。著重於心理博弈與戰術執行的細節。繁體中文。`;
+                    const text = await callGemini(prompt);
+                    setModalContent(text);
+                } else {
+                    const { host, soul } = appState.soulMode.selection;
+                    openModal(`魂穿模擬：${soul} ⭢ ${host}`, 'content');
+                    el('radarChartContainer').classList.add('hidden'); 
+                    const prompt = `歷史魂穿模擬：
+                    【穿越者】：${soul}
+                    【宿主】：${host}
+
+                    假設【${soul}】在【${host}】人生的某個關鍵轉折點（例如重大戰役前夕、政變前夜）接管了身體。
+                    
+                    請利用「名將四維」進行分析：
+                    1. **四維屬性碰撞**：
+                       - **【統御】**：穿越者的帶兵風格與宿主的舊部能否融合？
+                       - **【政治】**：穿越者的政治手腕與宿主原本的政治地位結合，會產生什麼化學反應？
+                    2. **【戰略】決策差異**：面對宿主歷史上最大的遺憾或失敗，穿越者會做出什麼不同的戰略選擇？
+                    3. **蝴蝶效應推演**：這將如何改變當時的歷史走向？
+
+                    規範：請基於史料邏輯進行合理想像，避免過於荒誕的劇情。保持學術分析的口吻。繁體中文。`;
+                    const text = await callGemini(prompt);
+                    setModalContent(text);
+                }
+            } catch (e) {
+                setModalContent(`模擬失敗: ${e.message}`);
+            }
+        }
+
+        // --- Shared & Helper ---
+        let radarChartInstance = null;
+        function renderRadarChart(datasets) {
+            const ctx = el('radarChart').getContext('2d');
+            el('radarChartContainer').classList.remove('hidden');
+            if (radarChartInstance) radarChartInstance.destroy();
+            radarChartInstance = new Chart(ctx, { type: 'radar', data: { labels: ['戰略 (Strategy)', '戰術 (Tactics)', '統御 (Leadership)', '政治 (Politics)'], datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestedMin: 30, suggestedMax: 100 } } } });
+        }
+
+        function openModal(title, type) {
+            const m = el('aiModal');
+            el('modalTitle').innerText = title;
+            m.classList.remove('hidden');
+            if(type==='chat') {
+                el('chatContainer').classList.remove('hidden');
+                el('contentContainer').classList.add('hidden');
+                el('clearMemoryBtn').classList.remove('hidden');
+            } else {
+                el('chatContainer').classList.add('hidden');
+                el('contentContainer').classList.remove('hidden');
+                el('loadingState').classList.remove('hidden');
+                el('loadingState').classList.add('flex');
+                el('modalContent').innerHTML = '';
+                el('radarChartContainer').classList.add('hidden');
+                el('clearMemoryBtn').classList.add('hidden');
+            }
+        }
+        
+        function setModalContent(text) {
+            el('loadingState').classList.add('hidden');
+            el('loadingState').classList.remove('flex');
+            el('modalContent').innerHTML = marked.parse(text);
+        }
+        function closeModal() { el('aiModal').classList.add('hidden'); }
+
+        function saveDataFile() {
+            const data = {
+                customGenerals: appState.customGenerals,
+                modifiedGenerals: appState.modifiedGenerals,
+                chatHistories: appState.chatHistories,
+                version: "12.0"
+            };
+            const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `history_legends_v12_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+
+        function loadDataFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    appState.customGenerals = data.customGenerals || [];
+                    appState.modifiedGenerals = data.modifiedGenerals || {};
+                    appState.chatHistories = data.chatHistories || {};
+                    localStorage.setItem('customGenerals', JSON.stringify(appState.customGenerals));
+                    localStorage.setItem('modifiedGenerals', JSON.stringify(appState.modifiedGenerals));
+                    localStorage.setItem('generalChatHistories', JSON.stringify(appState.chatHistories));
+                    
+                    // Critical fix: Rebuild the data immediately after loading
+                    try {
+                        generalsData = [...staticGeneralsData, ...appState.customGenerals];
+                        generalsData = generalsData.map(g => appState.modifiedGenerals[g.name] ? { ...g, ...appState.modifiedGenerals[g.name], isModified: true } : g);
+                    } catch (e) {
+                        console.error("Error rebuilding data:", e);
+                        generalsData = [...staticGeneralsData];
+                    }
+                    
+                    renderGenerals();
+                    alert("讀檔成功！史冊已更新。");
+                } catch (err) { console.error(err); alert("讀檔失敗：檔案格式錯誤"); }
+            };
+            reader.readAsText(file);
+        }
+        
+        function exportToCSV() {
+            const headers = ["姓名", "評級", "稱號", "特質標籤", "簡評", "判詞"];
+            const rows = generalsData.map(g => [g.name, g.rank, g.title, g.tag, g.desc, g.poem]);
+            let csvContent = "\uFEFF" + headers.join(",") + "\n";
+            rows.forEach(row => csvContent += row.map(cell => `"${(cell||'').toString().replace(/"/g, '""')}"`).join(",") + "\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `歷史名將評鑑表_v12.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Event Delegation
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'bg-[#2c2826]', 'text-[#f5f5f4]', 'shadow-inner'));
+                e.target.classList.add('active', 'bg-[#2c2826]', 'text-[#f5f5f4]', 'shadow-inner');
+                renderGenerals(e.target.getAttribute('data-rank'), el('searchInput').value);
+            });
+        });
+        el('searchInput').addEventListener('input', (e) => {
+            const rank = document.querySelector('.filter-btn.active')?.getAttribute('data-rank') || 'all';
+            renderGenerals(rank, e.target.value);
+        });
+
+        init();
+    </script>
+</body>
+</html>
